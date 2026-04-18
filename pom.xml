@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.mycelis</groupId>
-	<artifactId>monitor</artifactId>
+	<artifactId>mycelis</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>
 	<description/>
