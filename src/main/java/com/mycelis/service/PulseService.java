@@ -1,6 +1,7 @@
 package com.mycelis.service;
 
 
+import com.mycelis.model.dto.responses.PulseResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
