@@ -6,10 +6,20 @@ import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
+import java.time.Duration;
 
 /**
  * Centralized configuration for health monitoring thresholds and state transitions.
  * Externalized to allow runtime tuning via Config Server without code changes.
+ *
+ * <p>Supports ISO-8601 Duration format for time-based properties:
+ * <ul>
+ *   <li>{@code PT5S} = 5 seconds</li>
+ *   <li>{@code PT1M} = 1 minute</li>
+ *   <li>{@code PT30S} = 30 seconds</li>
+ *   <li>{@code 5s}, {@code 5000ms} also supported via Spring Boot relaxed binding</li>
+ * </ul>
+ * </p>
  */
 @Data
 @ConfigurationProperties(prefix = "mycelis.monitoring")
@@ -86,15 +96,6 @@ public class MonitoringProperties {
     // =================================================================
 
     /**
-     * Maximum duration in seconds for a complete check cycle.
-     * If exceeded, the engine forces shutdown to prevent scheduler drift.
-     * Range: 10-300 seconds
-     */
-    @Min(10)
-    @Max(300)
-    private int maxCycleDurationSeconds = 120;
-
-    /**
      * Maximum response body size in bytes for RestClient requests.
      * Prevents memory exhaustion from malicious or unexpectedly large payloads.
      * Default: 16MB. Range: 1MB-100MB.
@@ -110,4 +111,44 @@ public class MonitoringProperties {
     @Min(5)
     @Max(120)
     private int defaultTimeoutSeconds = 30;
+
+    // =================================================================
+    // SCHEDULER CONFIGURATION (Fast-Tick Batch Processing)
+    // =================================================================
+
+    /**
+     * Interval between scheduler ticks.
+     * Format: ISO-8601 Duration (e.g., PT5S, 5s, 5000ms)
+     * Default: 5 seconds. Range: 1s-60s.
+     */
+    @Min(1_000)      // 1 second in ms
+    @Max(60_000)     // 60 seconds in ms
+    private Duration schedulerTickInterval = Duration.ofSeconds(5);
+
+    /**
+     * Maximum duration a single cycle may run before forced termination.
+     * Prevents scheduler drift and thread starvation.
+     * Format: ISO-8601 Duration. Default: 30 seconds. Range: 5s-120s.
+     */
+    @Min(5_000)      // 5 seconds in ms
+    @Max(120_000)    // 120 seconds in ms
+    private Duration maxCycleDuration = Duration.ofSeconds(30);
+
+    /**
+     * Maximum number of stalks to process per tick.
+     * Enforces backpressure and smooths database load.
+     * Default: 50. Range: 1-500.
+     */
+    @Min(1)
+    @Max(500)
+    private int maxBatchSize = 50;
+
+    /**
+     * Jitter percentage applied to next_check_at (0-50%).
+     * Prevents thundering herd on shared intervals.
+     * Default: 10%.
+     */
+    @Min(0)
+    @Max(50)
+    private int schedulerJitterPercent = 10;
 }

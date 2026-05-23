@@ -51,4 +51,14 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
     void updateNextCheckAt(@Param("id") UUID id,
                            @Param("nextCheckAt") Instant nextCheckAt,
                            @Param("now") Instant now);
+
+    @Query("""
+    SELECT s FROM Stalk s
+    WHERE s.nextCheckAt <= :now
+      AND s.isActive = true
+      AND s.currentState != 'DORMANT'
+    ORDER BY s.nextCheckAt ASC
+    """)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<Stalk> findDueForCheck(@Param("now") Instant now, Pageable pageable);
 }
