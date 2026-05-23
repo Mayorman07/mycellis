@@ -16,6 +16,10 @@ import jakarta.validation.constraints.Max;
 @Validated
 public class MonitoringProperties {
 
+    // =================================================================
+    // STATE MACHINE THRESHOLDS
+    // =================================================================
+
     /**
      * Minimum health index percentage to be considered HEALTHY or STRESSED.
      * Range: 0-100
@@ -51,8 +55,13 @@ public class MonitoringProperties {
     @Min(1)
     private int maxConsecutiveFailures = 10;
 
+    // =================================================================
+    // API RESPONSE LIMITS (Defense Against Resource Exhaustion)
+    // =================================================================
+
     /**
      * Maximum number of recent pulses to return in a single request.
+     * Prevents OOM attacks via unbounded ?limit=100000 queries.
      */
     @Min(1)
     @Max(500)
@@ -71,4 +80,34 @@ public class MonitoringProperties {
     @Min(50)
     @Max(2048)
     private int maxErrorMessageLength = 512;
+
+    // =================================================================
+    // PULSE ENGINE CONFIGURATION (Virtual Thread Execution)
+    // =================================================================
+
+    /**
+     * Maximum duration in seconds for a complete check cycle.
+     * If exceeded, the engine forces shutdown to prevent scheduler drift.
+     * Range: 10-300 seconds
+     */
+    @Min(10)
+    @Max(300)
+    private int maxCycleDurationSeconds = 120;
+
+    /**
+     * Maximum response body size in bytes for RestClient requests.
+     * Prevents memory exhaustion from malicious or unexpectedly large payloads.
+     * Default: 16MB. Range: 1MB-100MB.
+     */
+    @Min(1_048_576)      // 1MB minimum
+    @Max(104_857_600)    // 100MB maximum
+    private int maxResponseSizeBytes = 16 * 1024 * 1024;
+
+    /**
+     * Default connection timeout in seconds for HTTP requests when not specified per-stalk.
+     * Used as fallback if stalk.timeoutSeconds is null or invalid.
+     */
+    @Min(5)
+    @Max(120)
+    private int defaultTimeoutSeconds = 30;
 }

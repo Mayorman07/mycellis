@@ -1,7 +1,5 @@
 package com.mycelis.model.dto.responses;
 
-package com.mycelis.dto;
-
 import lombok.Builder;
 import lombok.Data;
 
