@@ -50,4 +50,25 @@ public class MonitoringProperties {
      */
     @Min(1)
     private int maxConsecutiveFailures = 10;
+
+    /**
+     * Maximum number of recent pulses to return in a single request.
+     */
+    @Min(1)
+    @Max(500)
+    private int maxRecentPulses = 200;
+
+    /**
+     * Maximum page size for paginated pulse history endpoints.
+     */
+    @Min(1)
+    @Max(200)
+    private int maxHistoryPageSize = 100;
+
+    /**
+     * Maximum length for stored error messages to prevent database bloat.
+     */
+    @Min(50)
+    @Max(2048)
+    private int maxErrorMessageLength = 512;
 }
