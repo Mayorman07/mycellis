@@ -122,11 +122,11 @@ public class PulseEngine {
 
             executor.shutdown();
             boolean terminated = executor.awaitTermination(
-                    monitoringProperties.getMaxCycleDurationSeconds(), TimeUnit.SECONDS);
+                    monitoringProperties.getMaxCycleDuration().getSeconds(), TimeUnit.SECONDS);
 
             if (!terminated) {
                 log.warn("Check cycle did not complete within {} seconds. Forcing shutdown.",
-                        monitoringProperties.getMaxCycleDurationSeconds());
+                        monitoringProperties.getMaxCycleDuration().getSeconds());
                 executor.shutdownNow();
             }
 

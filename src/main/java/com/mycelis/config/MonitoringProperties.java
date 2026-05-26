@@ -113,25 +113,33 @@ public class MonitoringProperties {
     private int defaultTimeoutSeconds = 30;
 
     // =================================================================
-    // SCHEDULER CONFIGURATION (Fast-Tick Batch Processing)
-    // =================================================================
+// SCHEDULER CONFIGURATION (Duration-native, ISO-8601 compliant)
+// =================================================================
 
     /**
      * Interval between scheduler ticks.
      * Format: ISO-8601 Duration (e.g., PT5S, 5s, 5000ms)
      * Default: 5 seconds. Range: 1s-60s.
+     *
+     * <p>Spring Boot auto-binds these formats:
+     * <ul>
+     *   <li>{@code PT5S} = 5 seconds (ISO-8601)</li>
+     *   <li>{@code 5s} = 5 seconds (relaxed binding)</li>
+     *   <li>{@code 5000ms} = 5 seconds (relaxed binding)</li>
+     * </ul>
+     * </p>
      */
-    @Min(1_000)      // 1 second in ms
-    @Max(60_000)     // 60 seconds in ms
+    @Min(1_000)      // 1 second in milliseconds
+    @Max(60_000)     // 60 seconds in milliseconds
     private Duration schedulerTickInterval = Duration.ofSeconds(5);
 
     /**
      * Maximum duration a single cycle may run before forced termination.
-     * Prevents scheduler drift and thread starvation.
      * Format: ISO-8601 Duration. Default: 30 seconds. Range: 5s-120s.
+     * Prevents scheduler drift and thread starvation.
      */
-    @Min(5_000)      // 5 seconds in ms
-    @Max(120_000)    // 120 seconds in ms
+    @Min(5_000)      // 5 seconds in milliseconds
+    @Max(120_000)    // 120 seconds in milliseconds
     private Duration maxCycleDuration = Duration.ofSeconds(30);
 
     /**
