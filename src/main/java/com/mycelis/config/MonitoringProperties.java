@@ -113,8 +113,8 @@ public class MonitoringProperties {
     private int defaultTimeoutSeconds = 30;
 
     // =================================================================
-// SCHEDULER CONFIGURATION (Duration-native, ISO-8601 compliant)
-// =================================================================
+    // SCHEDULER CONFIGURATION (Duration-native, ISO-8601 compliant)
+   // =================================================================
 
     /**
      * Interval between scheduler ticks.

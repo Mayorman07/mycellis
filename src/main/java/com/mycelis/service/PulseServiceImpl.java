@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,9 +74,9 @@ public class PulseServiceImpl implements PulseService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PulseResponse> getPulseHistory(UUID stalkId, org.springframework.data.domain.Pageable pageable) {
+    public Page<PulseResponse> getPulseHistory(UUID stalkId, Pageable pageable) {
         // Enforce max page size to prevent accidental full-table scans
-        org.springframework.data.domain.Pageable safePageable = enforceMaxPageSize(pageable);
+        Pageable safePageable = enforceMaxPageSize(pageable);
         return pulseRepository.findByStalkId(stalkId, safePageable).map(this::mapToResponse);
     }
 
@@ -128,8 +129,7 @@ public class PulseServiceImpl implements PulseService {
     /**
      * Enforces safe pagination limits to prevent resource exhaustion attacks.
      */
-    private org.springframework.data.domain.Pageable enforceMaxPageSize(
-            org.springframework.data.domain.Pageable pageable) {
+    private Pageable enforceMaxPageSize(Pageable pageable) {
 
         int maxPageSize = monitoringProperties.getMaxHistoryPageSize();
         if (pageable.getPageSize() > maxPageSize) {

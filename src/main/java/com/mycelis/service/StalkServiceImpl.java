@@ -4,6 +4,7 @@ import com.mycelis.config.MonitoringProperties;
 import com.mycelis.constant.StalkState;
 import com.mycelis.constant.StateCategory;
 import com.mycelis.entity.Stalk;
+import com.mycelis.exception.TenantAccessException;
 import com.mycelis.model.dto.requests.CreateStalkRequest;
 import com.mycelis.model.dto.responses.StalkResponse;
 import com.mycelis.repository.PulseRepository;
@@ -62,7 +63,7 @@ public class StalkServiceImpl implements StalkService {
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
         if (!stalk.getUserId().equals(userId)) {
-            throw new SecurityException("Access denied: Stalk does not belong to tenant " + userId);
+            throw new TenantAccessException("Access denied: Stalk does not belong to tenant " + userId);
         }
         return mapToResponse(stalk);
     }

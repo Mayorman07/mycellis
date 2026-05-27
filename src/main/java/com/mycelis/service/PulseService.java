@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -45,7 +46,7 @@ public interface PulseService {
      * @param limit maximum records to return (capped at 200 for payload safety)
      * @return ordered list of recent pulses
      */
-    java.util.List<PulseResponse> getRecentPulses(UUID stalkId, int limit);
+    List<PulseResponse> getRecentPulses(UUID stalkId, int limit);
 
     /**
      * Returns paginated pulse history for trend analysis and export.

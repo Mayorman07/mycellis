@@ -4,6 +4,10 @@ import com.mycelis.config.MonitoringProperties;
 import com.mycelis.entity.Stalk;
 import com.mycelis.service.PulseService;
 import com.mycelis.service.StalkService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -17,9 +21,10 @@ import java.net.UnknownHostException;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>Per-stalk timeout caching → dynamic timeouts without rebuilding factories</li>
  *   <li>Root-cause exception classification → accurate error reporting despite RestClient wrapping</li>
  *   <li>Graceful degradation → timeouts and errors recorded as pulses, not crashes</li>
+ *   <li>Observability via Micrometer → SLO tracking, anomaly detection, and production debugging</li>
  * </ul>
  * </p>
  */
@@ -47,23 +53,54 @@ public class PulseEngine {
     private final PulseService pulseService;
     private final StalkService stalkService;
     private final MonitoringProperties monitoringProperties;
+    private final MeterRegistry meterRegistry;
 
-    // Cache of RestClient instances keyed by timeout value to support per-stalk timeouts
-    private final Map<Integer, RestClient> clientCache = new ConcurrentHashMap<>();
+    private static final int MAX_CLIENT_CACHE_SIZE = 50;
+
+    // Counters for cycle-level metrics
+    private final Counter cycleSuccessCounter;
+    private final Counter cycleFailureCounter;
+
+    // Cache of RestClient instances keyed by timeout value (LRU-bounded)
+    private final Map<Integer, RestClient> clientCache = Collections.synchronizedMap(
+            new LinkedHashMap<Integer, RestClient>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<Integer, RestClient> eldest) {
+                    return size() > MAX_CLIENT_CACHE_SIZE;
+                }
+            }
+    );
 
     /**
-     * Constructs PulseEngine with production-grade RestClient configuration.
+     * Constructs PulseEngine with production-grade RestClient configuration and metrics.
      *
      * @param pulseService service for recording diagnostic pulses
      * @param stalkService service for updating stalk state and metrics
      * @param monitoringProperties configuration for thresholds and limits
+     * @param meterRegistry Micrometer registry for observability
      */
     public PulseEngine(PulseService pulseService,
                        StalkService stalkService,
-                       MonitoringProperties monitoringProperties) {
+                       MonitoringProperties monitoringProperties,
+                       MeterRegistry meterRegistry) {
         this.pulseService = pulseService;
         this.stalkService = stalkService;
         this.monitoringProperties = monitoringProperties;
+        this.meterRegistry = meterRegistry;
+
+        // Register counters for cycle metrics
+        this.cycleSuccessCounter = Counter.builder("app.engine.cycle.success")
+                .description("Number of successful health checks per cycle")
+                .register(meterRegistry);
+
+        this.cycleFailureCounter = Counter.builder("app.engine.cycle.failure")
+                .description("Number of failed health checks per cycle")
+                .register(meterRegistry);
+
+        // Register gauge for cache size monitoring
+        Gauge.builder("app.engine.client_cache.size", clientCache, Map::size)
+                .description("Number of cached RestClient instances (LRU-bounded)")
+                .register(meterRegistry);
     }
 
     /**
@@ -135,6 +172,10 @@ public class PulseEngine {
             Thread.currentThread().interrupt();
         }
 
+        // Record cycle-level metrics
+        cycleSuccessCounter.increment(successfulChecks.get());
+        cycleFailureCounter.increment(failedChecks.get());
+
         Duration cycleDuration = Duration.between(cycleStart, Instant.now());
         log.info("Check cycle completed: duration={}ms, successful={}, failed={}, total={}",
                 cycleDuration.toMillis(),
@@ -150,6 +191,9 @@ public class PulseEngine {
      * @param stalk the monitoring target to check
      */
     private void executeCheck(Stalk stalk) {
+        // Start timer for per-check duration tracking
+        Timer.Sample sample = Timer.start(meterRegistry);
+
         Instant requestStart = Instant.now();
         String url = stalk.getUrl();
         int timeoutSeconds = stalk.getTimeoutSeconds();
@@ -176,10 +220,18 @@ public class PulseEngine {
             log.debug("Check succeeded: stalkId={}, status={}, latency={}ms",
                     stalk.getId(), statusCode.value(), latencyMs);
 
+            // Record success metric with status tag
+            sample.stop(Timer.builder("app.engine.check.duration")
+                    .description("Duration of a single health check")
+                    .tag("result", "success")
+                    .tag("status", String.valueOf(statusCode.value()))
+                    .tag("url_hash", hashUrl(url)) // Avoid high-cardinality URL tag
+                    .register(meterRegistry));
+
         } catch (RestClientResponseException e) {
             // HTTP 4xx/5xx responses are valid responses, not exceptions
             long latencyMs = Duration.between(requestStart, Instant.now()).toMillis();
-            int statusCode = e.getStatusCode().value();
+            int statusCode = e.getStatusCode() != null ? e.getStatusCode().value() : 0;
             boolean isSuccess = statusCode >= 200 && statusCode < 400;
 
             pulseService.recordCheckResult(stalk.getId(), statusCode, latencyMs, isSuccess, e.getMessage());
@@ -187,6 +239,14 @@ public class PulseEngine {
 
             log.debug("Check returned error status: stalkId={}, status={}, latency={}ms, error={}",
                     stalk.getId(), statusCode, latencyMs, e.getMessage());
+
+            // Record HTTP error metric
+            sample.stop(Timer.builder("app.engine.check.duration")
+                    .description("Duration of a single health check")
+                    .tag("result", "http_error")
+                    .tag("status", String.valueOf(statusCode))
+                    .tag("url_hash", hashUrl(url))
+                    .register(meterRegistry));
 
         } catch (ResourceAccessException e) {
             // Network-level failures (timeouts, connection refused, DNS, SSL)
@@ -202,6 +262,14 @@ public class PulseEngine {
             log.warn("Network error: stalkId={}, latency={}ms, error={}",
                     stalk.getId(), latencyMs, errorMessage);
 
+            // Record network error metric
+            sample.stop(Timer.builder("app.engine.check.duration")
+                    .description("Duration of a single health check")
+                    .tag("result", "network_error")
+                    .tag("error_type", classifyExceptionForMetric(rootCause))
+                    .tag("url_hash", hashUrl(url))
+                    .register(meterRegistry));
+
         } catch (Exception e) {
             // Fallback for any other unexpected errors
             long latencyMs = Duration.between(requestStart, Instant.now()).toMillis();
@@ -213,7 +281,49 @@ public class PulseEngine {
 
             log.error("Unexpected error: stalkId={}, latency={}ms, error={}",
                     stalk.getId(), latencyMs, errorMessage, e);
+
+            // Record unexpected error metric
+            sample.stop(Timer.builder("app.engine.check.duration")
+                    .description("Duration of a single health check")
+                    .tag("result", "unexpected_error")
+                    .tag("error_type", rootCause.getClass().getSimpleName())
+                    .tag("url_hash", hashUrl(url))
+                    .register(meterRegistry));
         }
+    }
+
+    /**
+     * Creates a low-cardinality hash of the URL for metrics tagging.
+     * Avoids high-cardinality explosion from unique URLs.
+     */
+    private String hashUrl(String url) {
+        // Simple hash: first 8 chars of MD5 (good enough for grouping)
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(url.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 4; i++) {
+                sb.append(String.format("%02x", digest[i]));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    /**
+     * Classifies exception for metric tagging (low-cardinality).
+     */
+    private String classifyExceptionForMetric(Throwable e) {
+        return switch (e) {
+            case ConnectException ignored -> "connection_refused";
+            case UnknownHostException ignored -> "dns_error";
+            case javax.net.ssl.SSLException ignored -> "ssl_error";
+            case HttpTimeoutException ignored -> "timeout";
+            case TimeoutException ignored -> "timeout";
+            case java.net.SocketTimeoutException ignored -> "read_timeout";
+            default -> "other";
+        };
     }
 
     /**
