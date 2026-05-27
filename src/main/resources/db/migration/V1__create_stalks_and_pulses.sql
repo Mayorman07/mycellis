@@ -16,7 +16,7 @@ CREATE TABLE stalks (
                             CHECK (current_state IN ('HEALTHY', 'STRESSED', 'DEGRADED', 'DORMANT')),
 
     -- Cached Health Metrics (avoids expensive real-time calculations)
-                        health_index DECIMAL(5,2) DEFAULT 0.00,  -- 0-100 sliding window score
+                        health_index DOUBLE PRECISION DEFAULT 0.00,  -- 0-100 sliding window score
                         last_10_success_count INTEGER DEFAULT 0,
                         last_10_avg_latency_ms BIGINT DEFAULT 0,
                         consecutive_failures INTEGER DEFAULT 0,

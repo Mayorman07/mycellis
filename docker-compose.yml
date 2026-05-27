@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: mycelis-db
+    environment:
+      POSTGRES_DB: mycelis
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Mayorman
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mycelis-network
+    restart: unless-stopped
+
+  # Prometheus (Scrapes metrics)
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: mycelis-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    networks:
+      - mycelis-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Grafana (Visualizes metrics)
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: mycelis-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - mycelis-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+networks:
+  mycelis-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:

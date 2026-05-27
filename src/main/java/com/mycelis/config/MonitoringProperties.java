@@ -2,6 +2,7 @@ package com.mycelis.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.constraints.Min;
@@ -23,6 +24,7 @@ import java.time.Duration;
  */
 @Data
 @ConfigurationProperties(prefix = "mycelis.monitoring")
+@Component
 @Validated
 public class MonitoringProperties {
 
@@ -129,8 +131,6 @@ public class MonitoringProperties {
      * </ul>
      * </p>
      */
-    @Min(1_000)      // 1 second in milliseconds
-    @Max(60_000)     // 60 seconds in milliseconds
     private Duration schedulerTickInterval = Duration.ofSeconds(5);
 
     /**
@@ -138,8 +138,6 @@ public class MonitoringProperties {
      * Format: ISO-8601 Duration. Default: 30 seconds. Range: 5s-120s.
      * Prevents scheduler drift and thread starvation.
      */
-    @Min(5_000)      // 5 seconds in milliseconds
-    @Max(120_000)    // 120 seconds in milliseconds
     private Duration maxCycleDuration = Duration.ofSeconds(30);
 
     /**

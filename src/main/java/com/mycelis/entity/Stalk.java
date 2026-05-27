@@ -61,9 +61,9 @@ public class Stalk {
     private StalkState currentState = StalkState.DORMANT;
 
     /** Health score (0.00–100.00) representing recent success rate */
-    @Column(name = "health_index", precision = 5, scale = 2)
+    @Column(name = "health_index", precision = 5)
     @Builder.Default
-    private Double healthIndex = 0.00;
+    private Double healthIndex=0.0;
 
     /** Count of successful checks within the rolling evaluation window */
     @Column(name = "last_10_success_count")
