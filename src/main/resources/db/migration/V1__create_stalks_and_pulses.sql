@@ -52,26 +52,28 @@ CREATE TRIGGER update_stalks_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
-
 -- ==========================================
 -- PULSES TABLE (Immutable Health Records)
 -- ==========================================
 CREATE TABLE pulses (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        id UUID NOT NULL,
                         stalk_id UUID NOT NULL REFERENCES stalks(id) ON DELETE CASCADE,
 
     -- HTTP Response Data
                         status_code INTEGER NOT NULL,
-                        latency_ms BIGINT NOT NULL,  -- Round-trip time in milliseconds
+                        latency_ms BIGINT NOT NULL,
                         is_success BOOLEAN NOT NULL,
                         error_message TEXT,
                         response_size_bytes BIGINT,
 
-    -- Timestamp
-                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    -- Timestamp (must be in PRIMARY KEY for partitioning)
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- Composite primary key for partitioned table
+                        PRIMARY KEY (id, created_at)
 ) PARTITION BY RANGE (created_at);
 
--- Create initial partition (Q2 2026 - adjust based on your launch date)
+-- Create initial partition (Q2 2026)
 CREATE TABLE pulses_2026_q2 PARTITION OF pulses
     FOR VALUES FROM ('2026-04-01') TO ('2026-07-01');
 
