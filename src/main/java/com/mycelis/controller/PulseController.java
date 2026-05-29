@@ -62,16 +62,11 @@ public class PulseController {
     public ResponseEntity<UptimeResponse> getUptime(
             @PathVariable UUID stalkId,
             @Parameter(description = "ISO-8601 duration window (e.g., P1D, P7D, P30D)", example = "P7D")
-            @RequestParam(defaultValue = "P7D") @Pattern(regexp = "^P(\\d+D|\\d+W|\\d+M)$", message = "Window must be a valid ISO-8601 duration (e.g., P7D)") String window) {
+            @RequestParam(defaultValue = "P7D")
+            @Pattern(regexp = "^P(\\d+D|\\d+W|\\d+M)$", message = "Window must be a valid ISO-8601 duration")
+            String window) {
 
-        Duration duration = Duration.parse("PT" + window.substring(1).replace("D", "24H").replace("W", "168H").replace("M", "720H"));
-        double uptime = pulseService.calculateUptimePercentage(stalkId, duration);
-
-        return ResponseEntity.ok(UptimeResponse.builder()
-                .stalkId(stalkId)
-                .window(window)
-                .uptimePercentage(Math.round(uptime * 100.0) / 100.0)
-                .calculatedAt(java.time.Instant.now())
-                .build());
+        return ResponseEntity.ok(pulseService.getUptimeByWindow(stalkId, window));
     }
+
 }

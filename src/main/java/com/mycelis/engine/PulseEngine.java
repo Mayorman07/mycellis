@@ -231,7 +231,7 @@ public class PulseEngine {
         } catch (RestClientResponseException e) {
             // HTTP 4xx/5xx responses are valid responses, not exceptions
             long latencyMs = Duration.between(requestStart, Instant.now()).toMillis();
-            int statusCode = e.getStatusCode() != null ? e.getStatusCode().value() : 0;
+            int statusCode = e.getStatusCode().value();
             boolean isSuccess = statusCode >= 200 && statusCode < 400;
 
             pulseService.recordCheckResult(stalk.getId(), statusCode, latencyMs, isSuccess, e.getMessage());

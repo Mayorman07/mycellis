@@ -8,6 +8,7 @@ import com.mycelis.service.StalkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Sort;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,8 +30,6 @@ import java.util.UUID;
  * for development testing. In production, this will be resolved automatically via
  * Spring Security {@code @AuthenticationPrincipal} or a gateway-injected {@code @RequestAttribute}.</p>
  *
- * @author Mycelis Engineering
- * @since 1.0.0
  */
 @RestController
 @RequestMapping("/api/v1/stalks")
@@ -67,7 +66,7 @@ public class StalkController {
     @GetMapping
     public ResponseEntity<Page<StalkResponse>> listStalks(
             @RequestParam UUID userId,
-            @PageableDefault(size = 20, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction =Sort.Direction.DESC) Pageable pageable) {
 
         return ResponseEntity.ok(stalkService.getAllStalks(userId, pageable));
     }

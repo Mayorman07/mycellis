@@ -2,6 +2,7 @@ package com.mycelis.service;
 
 
 import com.mycelis.model.dto.responses.PulseResponse;
+import com.mycelis.model.dto.responses.UptimeResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -66,4 +67,7 @@ public interface PulseService {
      * @return uptime ratio between 0.00 and 100.00
      */
     double calculateUptimePercentage(UUID stalkId, Duration window);
+
+    UptimeResponse getUptimeByWindow(UUID stalkId, String window);
+
 }

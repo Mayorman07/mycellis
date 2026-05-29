@@ -4,6 +4,7 @@ import com.mycelis.config.MonitoringProperties;
 import com.mycelis.entity.Pulse;
 import com.mycelis.entity.Stalk;
 import com.mycelis.model.dto.responses.PulseResponse;
+import com.mycelis.model.dto.responses.UptimeResponse;
 import com.mycelis.repository.PulseRepository;
 import com.mycelis.repository.StalkRepository;
 import lombok.RequiredArgsConstructor;
@@ -100,6 +101,56 @@ public class PulseServiceImpl implements PulseService {
         return uptimePercentage;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public UptimeResponse getUptimeByWindow(UUID stalkId, String window) {
+        // 1. Parse the ISO-8601 string to Duration
+        Duration duration = parseWindowToDuration(window);
+
+        // 2. Calculate raw uptime ratio (0.0 to 1.0) using renamed helper
+        double rawUptime = calculateRawUptimeRatio(stalkId, duration);
+
+        // 3. Round to 2 decimal places
+        double roundedUptime = Math.round(rawUptime * 100.0) / 100.0;
+
+        // 4. Build and return the response DTO
+        return UptimeResponse.builder()
+                .stalkId(stalkId)
+                .window(window)
+                .uptimePercentage(roundedUptime)
+                .calculatedAt(Instant.now())
+                .build();
+    }
+
+    /**
+     * Parses ISO-8601 duration string (P7D, P30D) to java.time.Duration.
+     * Handles common abbreviations (D=days, W=weeks, M=months).
+     */
+    private Duration parseWindowToDuration(String window) {
+        // Convert P7D → PT168H, P2W → PT336H, P1M → PT720H
+        String simplified = window.substring(1) // Remove leading 'P'
+                .replace("D", "24H")
+                .replace("W", "168H")
+                .replace("M", "720H");
+        return Duration.parse("PT" + simplified);
+    }
+
+    /**
+     * Internal helper: calculates raw uptime ratio (0.0 to 1.0).
+     * Kept private since external callers should use getUptimeByWindow().
+     */
+    private double calculateRawUptimeRatio(UUID stalkId, Duration window) {
+        Instant windowStart = Instant.now().minus(window);
+
+        long totalCount = pulseRepository.countByStalkIdAndCreatedAtAfter(stalkId, windowStart);
+        if (totalCount == 0) {
+            return 0.0;
+        }
+
+        long successCount = pulseRepository.countSuccessesInWindow(stalkId, windowStart);
+        return (successCount / (double) totalCount); // Returns 0.0 to 1.0
+    }
+
     /**
      * Maps domain entity to API response DTO.
      * Decouples database schema from external contract.
@@ -130,7 +181,6 @@ public class PulseServiceImpl implements PulseService {
      * Enforces safe pagination limits to prevent resource exhaustion attacks.
      */
     private Pageable enforceMaxPageSize(Pageable pageable) {
-
         int maxPageSize = monitoringProperties.getMaxHistoryPageSize();
         if (pageable.getPageSize() > maxPageSize) {
             log.warn("Page size {} exceeded limit {}; capping to {}",
