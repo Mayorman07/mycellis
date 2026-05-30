@@ -42,7 +42,7 @@ public class StalkServiceImpl implements StalkService {
                 .nickname(request.getNickname())
                 .growthIntervalSeconds(request.getGrowthIntervalSeconds())
                 .timeoutSeconds(request.getTimeoutSeconds())
-                .currentState(StalkState.DORMANT)
+                .currentState(StalkState.HEALTHY)
                 .healthIndex(0.0)
                 .consecutiveFailures(0)
                 .isActive(true)
