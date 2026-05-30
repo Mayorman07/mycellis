@@ -41,13 +41,11 @@ public class StalkSchedulerService {
     private final PulseEngine pulseEngine;
     private final MonitoringProperties monitoringProperties;
     private final MeterRegistry meterRegistry;
-
     // Metrics: Counters
     private final Counter tickProcessedCounter;
     private final Counter tickUpdatedCounter;
     private final Counter tickEmptyCounter;
     private final Counter tickFailedCounter;
-
     // Metrics: Timer for tick duration
     private final Timer tickDurationTimer;
 
