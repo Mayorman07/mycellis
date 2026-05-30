@@ -68,4 +68,11 @@ public interface PulseRepository extends JpaRepository<Pulse, UUID> {
     """)
     long countByStalkIdAndCreatedAtAfter(@Param("stalkId") UUID stalkId,
                                          @Param("windowStart") Instant windowStart);
+
+    @Query("""
+    SELECT COUNT(p) FROM Pulse p 
+    WHERE p.stalk.id = :stalkId 
+    AND p.createdAt >= :windowStart
+    """)
+    long countTotalInWindow(@Param("stalkId") UUID stalkId, @Param("windowStart") Instant windowStart);
 }

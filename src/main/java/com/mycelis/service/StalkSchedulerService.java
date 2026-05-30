@@ -76,6 +76,7 @@ public class StalkSchedulerService {
      * Transaction boundary is detached: claim work atomically, then dispatch non-transactionally.
      */
     @Scheduled(fixedDelayString = "#{@monitoringProperties.schedulerTickInterval.toMillis()}")
+    @Transactional
     public void runCheckCycle() {  // ← NO @Transactional here
         Timer.Sample sample = Timer.start(meterRegistry);
         Instant cycleStart = Instant.now();
@@ -118,7 +119,6 @@ public class StalkSchedulerService {
      * Transaction commits immediately after this method returns, releasing row locks.
      * This allows virtual threads to write to pulses table without blocking on parent stalk locks.
      */
-    @Transactional
     public List<Stalk> claimDueStalks(Instant now, int limit) {
         List<Stalk> dueStalks = stalkRepository.findDueForCheck(now, limit);
 

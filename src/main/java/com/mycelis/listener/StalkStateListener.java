@@ -20,7 +20,10 @@ public class StalkStateListener {
     @EventListener
     @Transactional
     public void handlePulseChecked(PulseCheckedEvent event) {
+        log.info("🎯 EVENT RECEIVED! stalkId={}, success={}",
+                event.getStalkId(), event.isSuccess());
         try {
+            log.info("📊 Calling updateMetricsAndTransitionState for {}", event.getStalkId());
             // Tenant isolation check (defensive)
             stalkService.updateMetricsAndTransitionState(
                     event.getStalkId(),

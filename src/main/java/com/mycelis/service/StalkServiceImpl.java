@@ -116,12 +116,16 @@ public class StalkServiceImpl implements StalkService {
                 Duration.ofMinutes(monitoringProperties.getSlidingWindowSize())
         );
 
+        // Get metrics from the sliding window
         long successCount = pulseRepository.countSuccessesInWindow(stalkId, windowStart);
+        long totalCount = pulseRepository.countTotalInWindow(stalkId, windowStart);  // ← NEW
         Double avgLatency = pulseRepository.calculateAvgLatencyInWindow(stalkId, windowStart);
 
-        double healthIndex = calculateHealthIndex(successCount);
+        // Calculate health as success RATE (not raw count)
+        double healthIndex = calculateHealthIndex(successCount, totalCount);
         StalkState newState = evaluateState(healthIndex, avgLatency);
 
+        // Fetch and update the stalk entity
         Stalk stalk = stalkRepository.findById(stalkId)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + stalkId));
 
@@ -130,10 +134,11 @@ public class StalkServiceImpl implements StalkService {
         stalk.setLast10SuccessCount((int) successCount);
         stalk.setCurrentState(newState);
         stalk.setUpdatedAt(Instant.now());
+
         stalkRepository.save(stalk);
 
-        log.debug("State transition: stalkId={}, healthIndex={}, previousState={}, newState={}",
-                stalkId, healthIndex, stalk.getCurrentState(), newState);
+        log.info("📊 State updated: stalkId={}, health={}%, successes={}/{} → {}",
+                stalkId, healthIndex, successCount, totalCount, newState);
     }
 
     /**
@@ -182,9 +187,15 @@ public class StalkServiceImpl implements StalkService {
         }
     }
 
-    private double calculateHealthIndex(long successCount) {
-        int windowSize = monitoringProperties.getSlidingWindowSize();
-        return Math.min(100.0, (successCount / (double) windowSize) * 100.0);
+    /**
+     * Calculates health index as success rate percentage.
+     * @param successCount Number of successful checks in window
+     * @param totalCount Total number of checks in window
+     * @return Health index 0.0 - 100.0
+     */
+    private double calculateHealthIndex(long successCount, long totalCount) {
+        if (totalCount == 0) return 0.0;  // No data yet → DORMANT
+        return Math.min(100.0, (successCount / (double) totalCount) * 100.0);
     }
 
     private double roundToTwoDecimals(double value) {

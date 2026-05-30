@@ -62,7 +62,7 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
      * @param now Current timestamp for audit trail
      * @return The number of rows updated (should be 1)
      */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(clearAutomatically = true)
     @Query("""
         UPDATE Stalk s
         SET s.nextCheckAt = :nextCheckAt,
