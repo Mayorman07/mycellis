@@ -123,8 +123,7 @@ public class StalkServiceImpl implements StalkService {
 
         // Calculate health as success RATE (not raw count)
         double healthIndex = calculateHealthIndex(successCount, totalCount);
-        StalkState newState = evaluateState(healthIndex, avgLatency);
-
+        StalkState newState = evaluateState(healthIndex, avgLatency, totalCount);
         // Fetch and update the stalk entity
         Stalk stalk = stalkRepository.findById(stalkId)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + stalkId));
@@ -145,13 +144,21 @@ public class StalkServiceImpl implements StalkService {
      * Evaluates stalk state using configurable thresholds and defensive validation.
      * Implements explicit state machine transitions with audit logging.
      */
-    private StalkState evaluateState(double healthIndex, Double avgLatency) {
+    private StalkState evaluateState(double healthIndex, Double avgLatency, long totalCount) {
         validateHealthIndex(healthIndex);
-
+        // No checks yet → DORMANT
+        if (totalCount == 0) {
+            return StalkState.DORMANT;
+        }
+        // All failures → DEGRADED
+        if (healthIndex == 0.0) {
+            return StalkState.DEGRADED;
+        }
+        // Now we have data and some successes
         return switch (getStateCategory(healthIndex)) {
             case HEALTHY_RANGE -> evaluateHealthyState(avgLatency);
             case DEGRADED_RANGE -> StalkState.DEGRADED;
-            case DORMANT_RANGE -> StalkState.DORMANT;
+            case LOW_HEALTH_RANGE -> StalkState.DEGRADED;  // Low but non-zero = failing
         };
     }
 
@@ -165,7 +172,7 @@ public class StalkServiceImpl implements StalkService {
         if (healthIndex > monitoringProperties.getDegradedThreshold()) {
             return StateCategory.DEGRADED_RANGE;
         }
-        return StateCategory.DORMANT_RANGE;
+        return StateCategory.LOW_HEALTH_RANGE;
     }
 
     /**

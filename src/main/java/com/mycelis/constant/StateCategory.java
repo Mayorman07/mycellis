@@ -6,5 +6,5 @@ package com.mycelis.constant;
  public enum StateCategory {
     HEALTHY_RANGE,
     DEGRADED_RANGE,
-    DORMANT_RANGE
+    LOW_HEALTH_RANGE
 }
