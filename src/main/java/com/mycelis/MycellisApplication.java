@@ -11,10 +11,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableAsync
 @EnableConfigurationProperties(MonitoringProperties.class)
-public class MonitorApplication {
+public class MycellisApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MonitorApplication.class, args);
+		SpringApplication.run(MycellisApplication.class, args);
 	}
 
 }
