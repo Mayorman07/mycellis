@@ -1,6 +1,6 @@
 package com.mycelis;
 
-import com.mycelis.config.MonitoringProperties;
+import com.mycelis.shared.config.MonitoringProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
