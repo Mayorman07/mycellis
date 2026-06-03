@@ -5,20 +5,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.net.URI;
 import java.time.Instant;
 
-/**
- * Centralized exception handler enforcing RFC 7807 Problem Details.
- * Guarantees consistent error contracts for API consumers.
- */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String BASE_URI = "https://mycelis.io/errors/";
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
@@ -26,9 +23,9 @@ public class GlobalExceptionHandler {
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .reduce((a, b) -> a + "; " + b)
                 .orElse("Invalid request payload");
-
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
         pd.setTitle("Validation Failed");
+        pd.setType(URI.create(BASE_URI + "validation-failed"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }
@@ -38,6 +35,7 @@ public class GlobalExceptionHandler {
         log.warn("Client error: {}", ex.getMessage());
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         pd.setTitle("Invalid Request Parameter");
+        pd.setType(URI.create(BASE_URI + "invalid-parameter"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }
@@ -48,6 +46,77 @@ public class GlobalExceptionHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
                 "Invalid parameter format: " + ex.getName());
         pd.setTitle("Malformed Request");
+        pd.setType(URI.create(BASE_URI + "malformed-request"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ProblemDetail handleNotFound(ResourceNotFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        pd.setTitle("Resource Not Found");
+        pd.setType(URI.create(BASE_URI + "resource-not-found"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ProblemDetail handleConflict(ConflictException ex) {
+        log.warn("Conflict: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        pd.setTitle("Resource Conflict");
+        pd.setType(URI.create(BASE_URI + "resource-conflict"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(ExpiredTokenException.class)
+    public ProblemDetail handleExpiredToken(ExpiredTokenException ex) {
+        log.warn("Expired token: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        pd.setTitle("Token Expired");
+        pd.setType(URI.create(BASE_URI + "token-expired"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(WeakPasswordException.class)
+    public ProblemDetail handleWeakPassword(WeakPasswordException ex) {
+        log.warn("Weak password attempt: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        pd.setTitle("Weak Password");
+        pd.setType(URI.create(BASE_URI + "weak-password"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(AccountNotVerifiedException.class)
+    public ProblemDetail handleAccountNotVerified(AccountNotVerifiedException ex) {
+        log.warn("Unverified account login attempt: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        pd.setTitle("Account Not Verified");
+        pd.setType(URI.create(BASE_URI + "account-not-verified"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(AccountSuspendedException.class)
+    public ProblemDetail handleAccountSuspended(AccountSuspendedException ex) {
+        log.warn("Suspended account login attempt: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        pd.setTitle("Account Suspended");
+        pd.setType(URI.create(BASE_URI + "account-suspended"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(TenantAccessException.class)
+    public ProblemDetail handleTenantAccess(TenantAccessException ex) {
+        log.warn("Tenant access violation: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        pd.setTitle("Tenant Access Denied");
+        pd.setType(URI.create(BASE_URI + "tenant-access-denied"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }
@@ -58,16 +127,8 @@ public class GlobalExceptionHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
                 "An internal error occurred. Please contact support.");
         pd.setTitle("Internal Server Error");
+        pd.setType(URI.create(BASE_URI + "internal-error"));
         pd.setProperty("timestamp", Instant.now());
-        return pd;
-    }
-
-    @ExceptionHandler(TenantAccessException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ProblemDetail handleTenantAccess(TenantAccessException ex) {
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
-        pd.setTitle("Tenant Access Denied");
-        pd.setType(URI.create("https://mycelis.io/errors/tenant-access-denied"));
         return pd;
     }
 }
