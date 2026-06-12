@@ -1,16 +1,13 @@
-package com.mycelis.user.controllers;
+package com.mycelis.user.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 
-import java.util.logging.Logger;
-
 
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
-@RefreshScope
 public class UsersController {
     private final UserService userService;
     private final ModelMapper modelMapper;
@@ -18,7 +15,7 @@ public class UsersController {
     private static final Logger logger = LoggerFactory.getLogger(UsersController.class);
 
     @PostMapping(path ="/create", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CreateUserResponse> createUser(@Valid @RequestBody CreateUserRequest createUserRequest, BindingResult bindingResult){
+    public ResponseEntity<CreateUserResponse> createUser(@Valid @RequestBody CreateUserRequest createUserRequest){
         logger.info("The incoming create user request {} " , createUserRequest);
         UserDto userDto = modelMapper.map(createUserRequest,UserDto.class);
         UserDto createdUserDto = userService.createUser(userDto);

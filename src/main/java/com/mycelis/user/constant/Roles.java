@@ -1,4 +1,4 @@
-package com.mycelis.user.constants;
+package com.mycelis.user.constant;
 
 public enum Roles {
 

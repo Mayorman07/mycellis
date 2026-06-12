@@ -1,4 +1,4 @@
-package com.mycelis.user.controllers;
+package com.mycelis.user.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

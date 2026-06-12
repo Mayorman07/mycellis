@@ -1,4 +1,4 @@
-package com.mycelis.user.entities;
+package com.mycelis.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

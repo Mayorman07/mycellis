@@ -57,7 +57,7 @@ public class PulseEngine {
 
     private final MonitoringProperties monitoringProperties;
     private final MeterRegistry meterRegistry;
-    private final ApplicationEventPublisher eventPublisher;  // ← New dependency
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final int MAX_CLIENT_CACHE_SIZE = 50;
 
@@ -84,7 +84,7 @@ public class PulseEngine {
      */
     public PulseEngine(MonitoringProperties monitoringProperties,
                        MeterRegistry meterRegistry,
-                       ApplicationEventPublisher eventPublisher) {  // ← Updated constructor
+                       ApplicationEventPublisher eventPublisher) {
         this.monitoringProperties = monitoringProperties;
         this.meterRegistry = meterRegistry;
         this.eventPublisher = eventPublisher;

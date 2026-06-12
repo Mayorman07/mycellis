@@ -1,4 +1,4 @@
-package com.mycelis.user.controllers;
+package com.mycelis.user.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-public class EmailVerificationController {
+public class VerificationController {
 
     private final UserService userService;
     @GetMapping("/verify")

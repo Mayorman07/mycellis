@@ -1,16 +1,15 @@
-package com.mycelis.user.entities;
+package com.mycelis.user.entity;
 
-import com.mycelis.user.constants.Status;
+import com.mycelis.user.constant.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import com.mycelis.user.constants.Gender;
+import com.mycelis.user.constant.Gender;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
