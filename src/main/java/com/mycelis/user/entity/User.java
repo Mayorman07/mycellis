@@ -90,6 +90,9 @@ public class User implements Serializable {
     @Column(name = "mobile_number", nullable = false, length = 20)
     private String mobileNumber;
 
+    @Column(name = "organization_id")
+    private UUID organizationId;
+
     @Column(name = "last_reactivation_email_sent_date")
     private Instant lastReactivationEmailSentDate;
 
