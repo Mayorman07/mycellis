@@ -1,8 +1,9 @@
 package com.mycelis.user.model.response;
 
+import java.util.Set;
+
 public record LoginResponse(
-        String accessToken,
-        String refreshToken,
         String userId,
-        long expiresIn
+        String email,
+        Set<String> roles
 ) {}

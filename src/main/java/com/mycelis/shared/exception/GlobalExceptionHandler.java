@@ -3,6 +3,9 @@ package com.mycelis.shared.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -128,6 +131,37 @@ public class GlobalExceptionHandler {
                 "An internal error occurred. Please contact support.");
         pd.setTitle("Internal Server Error");
         pd.setType(URI.create(BASE_URI + "internal-error"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
+        log.warn("Failed login attempt");
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        pd.setTitle("Authentication Failed");
+        pd.setType(URI.create(BASE_URI + "authentication-failed"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ProblemDetail handleDisabled(DisabledException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "Account is not active. Please verify your email.");
+        pd.setTitle("Account Disabled");
+        pd.setType(URI.create(BASE_URI + "account-disabled"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ProblemDetail handleLocked(LockedException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "Account is locked. Contact support.");
+        pd.setTitle("Account Locked");
+        pd.setType(URI.create(BASE_URI + "account-locked"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }
