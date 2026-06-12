@@ -31,3 +31,40 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Secrets / Environment ###
+.env
+.env.*
+!.env.example
+application-local.properties
+application-secrets.properties
+*.pem
+*.key
+*.p12
+secrets/
+
+### OS files ###
+.DS_Store
+Thumbs.db
+
+### Java / Maven build artifacts ###
+*.class
+*.jar
+*.war
+*.log
+
+### Spring Boot ###
+spring-shell.log
+out/
+
+### Database / dumps ###
+*.sql.gz
+*.dump
+postgres-data/
+
+### Test outputs / coverage ###
+.coverage
+coverage/
+htmlcov/
+jacoco.exec
+test-output/
