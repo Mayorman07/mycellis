@@ -39,6 +39,11 @@ public record CreateUserRequest(
 
         @NotBlank(message = "Mobile number cannot be empty")
         @Pattern(regexp = "^\\+?[0-9]{11,15}$", message = "Mobile number must be between 11 and 15 digits")
-        String mobileNumber
+        String mobileNumber,
+
+        @NotBlank(message = "Organization name is required")
+        @Size(min = 2, max = 100, message = "Organization name must be between 2 and 100 characters")
+        @SafeText(message = "Organization name contains invalid characters")
+        String organizationName
 
 ) {}
