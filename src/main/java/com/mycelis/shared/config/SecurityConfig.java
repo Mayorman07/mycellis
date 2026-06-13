@@ -54,6 +54,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(csrfHandler)
+                        .ignoringRequestMatchers(
+                                "/auth/login",
+                                "/auth/logout",
+                                "/auth/forgot-password",
+                                "/auth/reset-password",
+                                "/auth/verify",
+                                "/users/create"
+                        )
                 )
 
                 // Stateful sessions for the dashboard

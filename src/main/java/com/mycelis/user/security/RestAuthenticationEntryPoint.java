@@ -2,6 +2,7 @@ package com.mycelis.user.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -22,9 +23,9 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
     private final JacksonJsonHttpMessageConverter converter = new JacksonJsonHttpMessageConverter();
 
     @Override
-    public void commence(HttpServletRequest request,
+    public void commence(@NonNull HttpServletRequest request,
                          HttpServletResponse response,
-                         AuthenticationException authException) throws IOException {
+                         @NonNull AuthenticationException authException) throws IOException {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED, "Authentication required");
         pd.setTitle("Unauthorized");

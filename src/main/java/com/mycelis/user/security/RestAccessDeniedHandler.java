@@ -2,6 +2,7 @@ package com.mycelis.user.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -22,9 +23,9 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
     private final JacksonJsonHttpMessageConverter converter = new JacksonJsonHttpMessageConverter();
 
     @Override
-    public void handle(HttpServletRequest request,
+    public void handle(@NonNull HttpServletRequest request,
                        HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException {
+                       @NonNull AccessDeniedException accessDeniedException) throws IOException {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.FORBIDDEN, "You do not have permission to access this resource");
         pd.setTitle("Access Denied");
