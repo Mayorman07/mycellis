@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -100,16 +101,17 @@ public class InitialDataSeeder {
     }
 
     private Role upsertRole(String name, Set<Authority> authorities) {
+        Set<Authority> mutableAuthorities = new HashSet<>(authorities);
         return roleRepository.findByName(name)
                 .map(existing -> {
-                    existing.setAuthorities(authorities);
+                    existing.setAuthorities(mutableAuthorities);
                     return roleRepository.save(existing);
                 })
                 .orElseGet(() -> {
                     Role r = Role.builder()
                             .name(name)
                             .systemRole(true)
-                            .authorities(authorities)
+                            .authorities(mutableAuthorities)
                             .build();
                     return roleRepository.save(r);
                 });
@@ -130,7 +132,7 @@ public class InitialDataSeeder {
                 .mobileNumber(mobile)
                 .encryptedPassword(passwordEncoder.encode(password))
                 .status(Status.ACTIVE)
-                .roles(Set.of(superAdminRole))
+                .roles(new HashSet<>(Set.of(superAdminRole)))
                 .build();
 
         userRepository.save(user);
