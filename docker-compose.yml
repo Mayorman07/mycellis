@@ -2,7 +2,6 @@ version: '3.8'
 
 services:
   # PostgreSQL Database
-  # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: mycelis-db
@@ -14,6 +13,17 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mycelis-network
+    restart: unless-stopped
+
+  # MailHog (fake SMTP for local dev — catches emails in a web UI)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mycelis-mailhog
+    ports:
+      - "1025:1025"   # SMTP: Spring sends mail here
+      - "8025:8025"   # Web UI: open this in browser to see emails
     networks:
       - mycelis-network
     restart: unless-stopped
