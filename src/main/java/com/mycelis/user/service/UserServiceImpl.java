@@ -27,8 +27,6 @@ import com.mycelis.notification.event.UserCreatedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
-import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
 @Service
