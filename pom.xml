@@ -137,6 +137,7 @@
 				<includes>
 					<include>**/*.sql</include>
 					<include>**/*.yml</include>
+					<include>**/*.html</include>
 					<include>**/*.properties</include>
 					<include>**/*.xml</include>
 				</includes>
