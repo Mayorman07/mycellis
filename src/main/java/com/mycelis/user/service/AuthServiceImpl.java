@@ -3,7 +3,9 @@ package com.mycelis.user.service;
 import com.mycelis.shared.exception.ConflictException;
 import com.mycelis.shared.exception.ExpiredTokenException;
 import com.mycelis.shared.exception.ResourceNotFoundException;
+import com.mycelis.shared.identity.IdGenerator;
 import com.mycelis.user.constant.Status;
+import com.mycelis.user.entity.Role;
 import com.mycelis.user.entity.User;
 import com.mycelis.user.model.request.ChangeEmailRequest;
 import com.mycelis.user.model.request.ChangePasswordRequest;
@@ -40,6 +42,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final IdGenerator idGenerator;
+
 
     // -------------------- LOGIN --------------------
 
@@ -59,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
         user.setLastLoggedIn(Instant.now());
 
         Set<String> roleNames = user.getRoles().stream()
-                .map(role -> role.getName())
+                .map(Role::getName)
                 .collect(Collectors.toSet());
 
         log.info("Successful login: {}", user.getEmail());
@@ -89,7 +93,7 @@ public class AuthServiceImpl implements AuthService {
     public void requestPasswordReset(ForgotPasswordRequest request) {
         // Always respond identically — never reveal whether email exists
         userRepository.findByEmail(request.email()).ifPresent(user -> {
-            String token = UUID.randomUUID().toString();
+            String token = idGenerator.newPasswordResetToken();
             user.setPasswordResetToken(token);
             user.setPasswordResetTokenExpiryDate(
                     Instant.now().plus(PASSWORD_RESET_TOKEN_TTL_HOURS, ChronoUnit.HOURS));
@@ -156,7 +160,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Defer the actual email swap until new address is verified
-        String token = UUID.randomUUID().toString();
+        String token = idGenerator.newPasswordResetToken();
         user.setVerificationToken(token);
         log.info("Email change verification token generated for {}", user.getEmail());
         // TODO: send verification email to new address

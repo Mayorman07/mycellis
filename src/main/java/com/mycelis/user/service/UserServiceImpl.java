@@ -4,6 +4,7 @@ import com.mycelis.organization.entity.Organization;
 import com.mycelis.organization.service.OrganizationService;
 import com.mycelis.shared.exception.ConflictException;
 import com.mycelis.shared.exception.ResourceNotFoundException;
+import com.mycelis.shared.identity.IdGenerator;
 import com.mycelis.user.constant.Status;
 import com.mycelis.user.entity.Role;
 import com.mycelis.user.entity.User;
@@ -42,6 +43,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final IdGenerator idGenerator;
+
 
     // -------------------- CREATE --------------------
 
@@ -61,14 +64,14 @@ public class UserServiceImpl implements UserService {
         UserDto dto = userMapper.toDto(request);
         dto.setEncryptedPassword(passwordEncoder.encode(request.password()));
         dto.setPassword(null);
-        dto.setUserId(UUID.randomUUID().toString());
+        dto.setUserId(idGenerator.newUserId());
         dto.setStatus(Status.NEW);
 
         User user = userMapper.toEntity(dto);
         user.getRoles().add(ownerRole);
 
         // Generate verification token
-        String verificationToken = UUID.randomUUID().toString();
+        String verificationToken = idGenerator.newVerificationToken();
         user.setVerificationToken(verificationToken);
 
         User savedUser = userRepository.save(user);
