@@ -2,7 +2,7 @@ package com.mycelis.notification.service;
 
 /**
  * Abstraction over email delivery providers.
- *
+ * <p>
  * Implementations are selected by Spring profile:
  *   - SmtpEmailService  (dev, local)  → MailHog
  *   - SesEmailService   (prod)        → AWS SES

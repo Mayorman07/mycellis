@@ -9,7 +9,7 @@ import java.util.Map;
 
 /**
  * Renders Thymeleaf email templates from src/main/resources/templates/email/.
- *
+ * <p>
  * Templates use {@code th:text}, {@code th:href}, {@code th:if}, etc.
  * Variables passed in `model` are available as ${variable} inside the template.
  */

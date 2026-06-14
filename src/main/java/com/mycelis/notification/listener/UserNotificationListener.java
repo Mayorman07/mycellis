@@ -1,4 +1,4 @@
-package com.mycelis.notification.event.listener;
+package com.mycelis.notification.listener;
 
 public class UserNotificationListener {
 }

@@ -6,11 +6,11 @@ import org.springframework.stereotype.Service;
 
 /**
  * AWS SES implementation — to be wired when prod deploy is ready.
- *
+ * <p>
  * Will use AWS SDK v2 with `software.amazon.awssdk:ses` and read credentials
  * via the default credential provider chain (IAM role on EC2/ECS, env vars
  * locally, etc.).
- *
+ * <p>
  * Lives here as a profile-gated placeholder so the prod path is wired
  * end-to-end and the prod context starts without missing-bean errors.
  */
