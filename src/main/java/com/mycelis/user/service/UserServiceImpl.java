@@ -22,6 +22,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.mycelis.notification.event.UserCreatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.Set;
@@ -39,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final OrganizationService organizationService;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     // -------------------- CREATE --------------------
 
@@ -47,36 +50,41 @@ public class UserServiceImpl implements UserService {
     public CreateUserResponse createUser(CreateUserRequest request) {
         log.info("Creating user with email {}", request.email());
 
-        // 1. Uniqueness check (DB still has UNIQUE constraint as last defense)
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new ConflictException("An account with this email already exists");
         }
 
-        // 2. Lookup OWNER role (must already exist via seeder)
         Role ownerRole = roleRepository.findByName(ROLE_OWNER)
                 .orElseThrow(() -> new IllegalStateException(
                         "OWNER role missing — seed did not run"));
 
-        // 3. Map request -> dto -> entity, fill the service-owned fields
         UserDto dto = userMapper.toDto(request);
         dto.setEncryptedPassword(passwordEncoder.encode(request.password()));
         dto.setPassword(null);
         dto.setUserId(UUID.randomUUID().toString());
-        dto.setStatus(Status.NEW); // require email verification before login
+        dto.setStatus(Status.NEW);
+
         User user = userMapper.toEntity(dto);
         user.getRoles().add(ownerRole);
 
-        // 4. Save user FIRST so we have a UUID to use as org owner
+        // Generate verification token
+        String verificationToken = UUID.randomUUID().toString();
+        user.setVerificationToken(verificationToken);
+
         User savedUser = userRepository.save(user);
 
-        // 5. Create the organization with this user as owner
         Organization org = organizationService.createForOwner(
                 request.organizationName(), savedUser.getId());
 
-        // 6. Back-link user -> org
         savedUser.setOrganizationId(org.getId());
 
-        // 7. Map to response WHILE still inside transaction (roles are lazy)
+        // Publish event — handled AFTER_COMMIT by UserNotificationListener
+        eventPublisher.publishEvent(new UserCreatedEvent(
+                savedUser.getEmail(),
+                savedUser.getFirstName(),
+                verificationToken
+        ));
+
         return userMapper.toCreateResponse(savedUser);
     }
 
