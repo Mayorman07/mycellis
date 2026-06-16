@@ -32,7 +32,7 @@ import java.util.UUID;
  *
  */
 @RestController
-@RequestMapping("/api/v1/stalks")
+@RequestMapping("/api/stalks")
 @Validated
 @RequiredArgsConstructor
 @Slf4j

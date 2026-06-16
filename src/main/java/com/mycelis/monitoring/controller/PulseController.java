@@ -27,7 +27,7 @@ import java.util.UUID;
  *
  */
 @RestController
-@RequestMapping("/api/v1/stalks/{stalkId}/pulses")
+@RequestMapping("/api/stalks/{stalkId}/pulses")
 @Validated
 @RequiredArgsConstructor
 @Slf4j

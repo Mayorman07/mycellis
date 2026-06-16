@@ -55,12 +55,12 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(csrfHandler)
                         .ignoringRequestMatchers(
-                                "/auth/login",
-                                "/auth/logout",
-                                "/auth/forgot-password",
-                                "/auth/reset-password",
-                                "/auth/verify",
-                                "/users/create"
+                                "/api/auth/login",
+                                "/api/auth/logout",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password",
+                                "/api/auth/verify",
+                                "/api/users/create"
                         )
                 )
 
@@ -72,14 +72,36 @@ public class SecurityConfig {
 
                 // Route rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public auth endpoints
+                        // Public API endpoints
                         .requestMatchers(
-                                "/auth/login",
-                                "/auth/logout",
-                                "/auth/forgot-password",
-                                "/auth/reset-password",
-                                "/auth/verify",
-                                "/users/create"
+                                "/api/auth/login",
+                                "/api/auth/logout",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password",
+                                "/api/auth/verify",
+                                "/api/users/create"
+                        ).permitAll()
+
+                        // Public static pages (frontend lives at root)
+                        .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/verify",
+                                "/verify.html",
+                                "/login",
+                                "/login.html",
+                                "/resend-verification",
+                                "/resend-verification.html",
+                                "/favicon.ico"
+                        ).permitAll()
+
+                        // Static assets (CSS/JS/images served from /static/)
+                        .requestMatchers(
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/assets/**",
+                                "/fonts/**"
                         ).permitAll()
 
                         // Health/metrics
@@ -102,7 +124,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
 
-                // We have our own login endpoint; disable Spring's defaults
+                //  disable Spring's default login page
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
 
