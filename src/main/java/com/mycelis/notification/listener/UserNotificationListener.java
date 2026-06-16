@@ -33,7 +33,7 @@ public class UserNotificationListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onUserCreated(UserCreatedEvent event) {
-        String verifyLink = baseUrl + "/verify?token=" + event.verificationToken();
+        String verifyLink = baseUrl + "/verify.html?token=" + event.verificationToken();
 
         String html = templateRenderer.render("email/verification-email", Map.of(
                 "firstName", event.firstName(),
