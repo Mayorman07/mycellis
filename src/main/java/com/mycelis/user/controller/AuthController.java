@@ -1,10 +1,6 @@
 package com.mycelis.user.controller;
 
-import com.mycelis.user.model.request.ChangeEmailRequest;
-import com.mycelis.user.model.request.ChangePasswordRequest;
-import com.mycelis.user.model.request.ForgotPasswordRequest;
-import com.mycelis.user.model.request.LoginRequest;
-import com.mycelis.user.model.request.ResetPasswordRequest;
+import com.mycelis.user.model.request.*;
 import com.mycelis.user.model.response.LoginResponse;
 import com.mycelis.user.service.AuthService;
 import jakarta.validation.Valid;
@@ -33,9 +29,9 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    @GetMapping("/verify")
-    public ResponseEntity<Void> verifyUser(@RequestParam("token") String token) {
-        authService.verifyUser(token);
+    @PostMapping(path = "/verify", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> verifyUser(@Valid @RequestBody VerifyEmailRequest request) {
+        authService.verifyUser(request.token());
         return ResponseEntity.noContent().build();
     }
 
