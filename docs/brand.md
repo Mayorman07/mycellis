@@ -53,17 +53,21 @@ Prefer active voice. Prefer short sentences. Prefer biological metaphors
 | `--status-dormant`   | `#94a3b8` | Service is dormant  |
 
 ---
-
 ## Mark
 
 A 14×14px aquamarine circle (`#7fffd4`) with a soft bioluminescent glow,
-placed left of the "Mycellis" wordmark. Sized small — meant to read as
-"a single glowing cell" without competing with the wordmark for attention.
+placed left of the "Mycellis" wordmark **on dark backgrounds only**
+(brand bar, dashboard nav, marketing site dark mode).
+
+On light/editorial layouts, omit the mark — the wordmark and accent
+line carry the brand on their own. Adding the mark on light backgrounds
+weakens both elements.
 
 - Mark color:           `#7fffd4`
-- Mark size:            14px diameter
+- Mark size:            14px diameter (8px when scaled with smaller wordmark)
 - Spacing to wordmark:  10px
 - Glow:                 `box-shadow: 0 0 8px #7fffd4, 0 0 14px rgba(127,255,212,0.6)`
+- Light background:     don't use
 
 In email clients that strip `box-shadow` (notably Outlook desktop), the
 mark falls back to a solid aquamarine circle — still on-brand, no
