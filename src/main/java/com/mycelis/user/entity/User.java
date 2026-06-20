@@ -105,6 +105,14 @@ public class User implements Serializable {
     @Column(name = "password_reset_email_count_window_start")
     private Instant passwordResetEmailCountWindowStart;
 
+    @Column(name = "last_verification_email_sent_at")
+    private Instant lastVerificationEmailSentAt;
+
+    @Column(name = "verification_email_count_today", nullable = false)
+    private int verificationEmailCountToday;
+
+    @Column(name = "verification_email_count_window_start")
+    private Instant verificationEmailCountWindowStart;
 
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinTable(
