@@ -1,6 +1,7 @@
 package com.mycelis.user.service;
 
 import com.mycelis.notification.event.PasswordResetRequestedEvent;
+import com.mycelis.notification.event.UserCreatedEvent;
 import com.mycelis.shared.exception.ConflictException;
 import com.mycelis.shared.exception.ExpiredTokenException;
 import com.mycelis.shared.exception.ResourceNotFoundException;
@@ -8,11 +9,7 @@ import com.mycelis.shared.identity.IdGenerator;
 import com.mycelis.user.constant.Status;
 import com.mycelis.user.entity.Role;
 import com.mycelis.user.entity.User;
-import com.mycelis.user.model.request.ChangeEmailRequest;
-import com.mycelis.user.model.request.ChangePasswordRequest;
-import com.mycelis.user.model.request.ForgotPasswordRequest;
-import com.mycelis.user.model.request.LoginRequest;
-import com.mycelis.user.model.request.ResetPasswordRequest;
+import com.mycelis.user.model.request.*;
 import com.mycelis.user.model.response.LoginResponse;
 import com.mycelis.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +38,9 @@ public class AuthServiceImpl implements AuthService {
     private static final int PASSWORD_RESET_COOLDOWN_SECONDS = 60;
     private static final int PASSWORD_RESET_MAX_PER_WINDOW = 5;
     private static final int PASSWORD_RESET_WINDOW_HOURS = 24;
+    private static final int VERIFICATION_RESEND_COOLDOWN_SECONDS = 60;
+    private static final int VERIFICATION_RESEND_MAX_PER_WINDOW = 5;
+    private static final int VERIFICATION_RESEND_WINDOW_HOURS = 24;
 
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
@@ -224,5 +224,73 @@ public class AuthServiceImpl implements AuthService {
         user.setVerificationToken(token);
         log.info("Email change verification token generated for {}", user.getEmail());
         // TODO: send verification email to new address
+    }
+
+    // -------------------- RESEND VERIFICATION EMAIL --------------------
+
+    @Override
+    @Transactional
+    public void resendVerification(ResendVerificationRequest request) {
+        // Always respond identically — never reveal whether email exists,
+        // whether user is already verified, or whether rate limited.
+        userRepository.findByEmail(request.email()).ifPresent(user -> {
+            // Skip silently if user is already verified
+            if (user.getStatus() != Status.NEW) {
+                log.info("Verification resend ignored — user {} already verified", user.getEmail());
+                return;
+            }
+
+            Instant now = Instant.now();
+
+            if (isVerificationResendRateLimited(user, now)) {
+                log.warn("Verification resend rate-limited for {}", user.getEmail());
+                return;
+            }
+
+            applyVerificationResendTracking(user, now);
+
+            // Regenerate the token (invalidates any older verification link)
+            String token = idGenerator.newVerificationToken();
+            user.setVerificationToken(token);
+
+            eventPublisher.publishEvent(new UserCreatedEvent(
+                    user.getEmail(),
+                    user.getFirstName(),
+                    token
+            ));
+
+            log.info("Verification email resent for {}", user.getEmail());
+        });
+    }
+
+    private boolean isVerificationResendRateLimited(User user, Instant now) {
+        Instant lastSent = user.getLastVerificationEmailSentAt();
+        if (lastSent != null
+                && lastSent.plusSeconds(VERIFICATION_RESEND_COOLDOWN_SECONDS).isAfter(now)) {
+            return true;
+        }
+
+        Instant windowStart = user.getVerificationEmailCountWindowStart();
+        if (windowStart != null
+                && windowStart.plus(VERIFICATION_RESEND_WINDOW_HOURS, ChronoUnit.HOURS).isAfter(now)
+                && user.getVerificationEmailCountToday() >= VERIFICATION_RESEND_MAX_PER_WINDOW) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void applyVerificationResendTracking(User user, Instant now) {
+        Instant windowStart = user.getVerificationEmailCountWindowStart();
+
+        if (windowStart == null
+                || windowStart.plus(VERIFICATION_RESEND_WINDOW_HOURS, ChronoUnit.HOURS).isBefore(now)) {
+            user.setVerificationEmailCountWindowStart(now);
+            user.setVerificationEmailCountToday(1);
+        } else {
+            user.setVerificationEmailCountToday(user.getVerificationEmailCountToday() + 1);
+        }
+
+        user.setLastVerificationEmailSentAt(now);
     }
 }

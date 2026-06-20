@@ -1,10 +1,6 @@
 package com.mycelis.user.service;
 
-import com.mycelis.user.model.request.ChangeEmailRequest;
-import com.mycelis.user.model.request.ChangePasswordRequest;
-import com.mycelis.user.model.request.ForgotPasswordRequest;
-import com.mycelis.user.model.request.LoginRequest;
-import com.mycelis.user.model.request.ResetPasswordRequest;
+import com.mycelis.user.model.request.*;
 import com.mycelis.user.model.response.LoginResponse;
 
 public interface AuthService {
@@ -19,5 +15,7 @@ public interface AuthService {
 
     void changePassword(String userId, ChangePasswordRequest request);  // authenticated
 
-    void changeEmail(String userId, ChangeEmailRequest request);        // authenticated
+    void changeEmail(String userId, ChangeEmailRequest request);// authenticated
+
+    void resendVerification(ResendVerificationRequest request);
 }

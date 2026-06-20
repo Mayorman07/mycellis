@@ -60,7 +60,8 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/auth/verify",
-                                "/api/users/create"
+                                "/api/users/create",
+                                "/api/auth/resend-verification"
                         )
                 )
 
@@ -79,6 +80,7 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
                                 "/api/auth/verify",
+                                "/api/auth/resend-verification",
                                 "/api/users/create"
                         ).permitAll()
 

@@ -62,4 +62,10 @@ public class AuthController {
         authService.changeEmail(principal.getUsername(), request);
         return ResponseEntity.accepted().build();
     }
+
+    @PostMapping(path = "/resend-verification", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        authService.resendVerification(request);
+        return ResponseEntity.accepted().build();
+    }
 }
