@@ -36,6 +36,9 @@ public interface UserMapper {
     @Mapping(target = "lastPasswordResetDate", ignore = true)
     @Mapping(target = "lastReactivationEmailSentDate", ignore = true)
     @Mapping(target = "organizationId", ignore = true)
+    @Mapping(target = "lastPasswordResetEmailSentAt", ignore = true)
+    @Mapping(target = "passwordResetEmailCountToday", ignore = true)
+
     User toEntity(UserDto dto);
 
     @Mapping(target = "roles", source = "roles", qualifiedByName = "rolesToNames")
