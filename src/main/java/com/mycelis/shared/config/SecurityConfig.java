@@ -92,6 +92,10 @@ public class SecurityConfig {
                                 "/login.html",
                                 "/resend-verification",
                                 "/resend-verification.html",
+                                "/reset-password",
+                                "/reset-password.html",
+                                "/forgot-password",
+                                "/forgot-password.html",
                                 "/favicon.ico"
                         ).permitAll()
 
