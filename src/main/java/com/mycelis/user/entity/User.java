@@ -96,6 +96,16 @@ public class User implements Serializable {
     @Column(name = "last_reactivation_email_sent_date")
     private Instant lastReactivationEmailSentDate;
 
+    @Column(name = "last_password_reset_email_sent_at")
+    private Instant lastPasswordResetEmailSentAt;
+
+    @Column(name = "password_reset_email_count_today", nullable = false)
+    private int passwordResetEmailCountToday;
+
+    @Column(name = "password_reset_email_count_window_start")
+    private Instant passwordResetEmailCountWindowStart;
+
+
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinTable(
             name = "users_roles",
