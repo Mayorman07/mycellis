@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/auth/verify",
                                 "/api/users/create",
-                                "/api/auth/resend-verification"
+                                "/api/auth/resend-verification",
+                                "/api/auth/logout"
                         )
                 )
 
@@ -81,7 +82,8 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/auth/verify",
                                 "/api/auth/resend-verification",
-                                "/api/users/create"
+                                "/api/users/create",
+                                "/api/auth/logout"
                         ).permitAll()
 
                         // Public static pages (frontend lives at root)
