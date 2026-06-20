@@ -271,13 +271,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         Instant windowStart = user.getVerificationEmailCountWindowStart();
-        if (windowStart != null
+        return windowStart != null
                 && windowStart.plus(VERIFICATION_RESEND_WINDOW_HOURS, ChronoUnit.HOURS).isAfter(now)
-                && user.getVerificationEmailCountToday() >= VERIFICATION_RESEND_MAX_PER_WINDOW) {
-            return true;
-        }
-
-        return false;
+                && user.getVerificationEmailCountToday() >= VERIFICATION_RESEND_MAX_PER_WINDOW;
     }
 
     private void applyVerificationResendTracking(User user, Instant now) {
