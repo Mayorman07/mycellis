@@ -1,5 +1,6 @@
 package com.mycelis.user.service;
 
+import com.mycelis.notification.event.PasswordResetRequestedEvent;
 import com.mycelis.shared.exception.ConflictException;
 import com.mycelis.shared.exception.ExpiredTokenException;
 import com.mycelis.shared.exception.ResourceNotFoundException;
@@ -16,6 +17,7 @@ import com.mycelis.user.model.response.LoginResponse;
 import com.mycelis.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -41,6 +43,8 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final IdGenerator idGenerator;
+    private final ApplicationEventPublisher eventPublisher;
+
 
 
     // -------------------- LOGIN --------------------
@@ -89,14 +93,20 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void requestPasswordReset(ForgotPasswordRequest request) {
-        // Always respond identically — never reveal whether email exists
+        // identical response — never reveal whether email exists
         userRepository.findByEmail(request.email()).ifPresent(user -> {
             String token = idGenerator.newPasswordResetToken();
             user.setPasswordResetToken(token);
             user.setPasswordResetTokenExpiryDate(
                     Instant.now().plus(PASSWORD_RESET_TOKEN_TTL_HOURS, ChronoUnit.HOURS));
-            log.info("Generated password reset token for {}", user.getEmail());
-            // TODO: enqueue email send (out of scope for tonight)
+
+            eventPublisher.publishEvent(new PasswordResetRequestedEvent(
+                    user.getEmail(),
+                    user.getFirstName(),
+                    token
+            ));
+
+            log.info("Password reset requested for {}", user.getEmail());
         });
     }
 
