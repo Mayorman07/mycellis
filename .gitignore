@@ -1,6 +1,7 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
+### Maven / Spring Boot build artifacts (now under backend/) ###
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/HELP.md
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -31,6 +32,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Node / Vite (frontend) ###
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 ### Secrets / Environment ###
 .env
