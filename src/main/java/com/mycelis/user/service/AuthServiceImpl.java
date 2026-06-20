@@ -38,6 +38,9 @@ import java.util.stream.Collectors;
 public class AuthServiceImpl implements AuthService {
 
     private static final int PASSWORD_RESET_TOKEN_TTL_HOURS = 1;
+    private static final int PASSWORD_RESET_COOLDOWN_SECONDS = 60;
+    private static final int PASSWORD_RESET_MAX_PER_WINDOW = 5;
+    private static final int PASSWORD_RESET_WINDOW_HOURS = 24;
 
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
@@ -93,12 +96,24 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void requestPasswordReset(ForgotPasswordRequest request) {
-        // identical response — never reveal whether email exists
+        // Always respond identically — never reveal whether email exists OR
+        // whether the user is rate-limited. Silent throttling.
         userRepository.findByEmail(request.email()).ifPresent(user -> {
+            Instant now = Instant.now();
+
+            if (isRateLimited(user, now)) {
+                log.warn("Password reset rate-limited for {}", user.getEmail());
+                return; // silently drop
+            }
+
+            // Update rate limit tracking
+            applyRateLimitTracking(user, now);
+
+            // Generate token + publish event as before
             String token = idGenerator.newPasswordResetToken();
             user.setPasswordResetToken(token);
             user.setPasswordResetTokenExpiryDate(
-                    Instant.now().plus(PASSWORD_RESET_TOKEN_TTL_HOURS, ChronoUnit.HOURS));
+                    now.plus(PASSWORD_RESET_TOKEN_TTL_HOURS, ChronoUnit.HOURS));
 
             eventPublisher.publishEvent(new PasswordResetRequestedEvent(
                     user.getEmail(),
@@ -108,6 +123,43 @@ public class AuthServiceImpl implements AuthService {
 
             log.info("Password reset requested for {}", user.getEmail());
         });
+    }
+
+// -------------------- RATE LIMITING --------------------
+
+    private boolean isRateLimited(User user, Instant now) {
+        // Cooldown check: was last email sent less than COOLDOWN_SECONDS ago?
+        Instant lastSent = user.getLastPasswordResetEmailSentAt();
+        if (lastSent != null
+                && lastSent.plusSeconds(PASSWORD_RESET_COOLDOWN_SECONDS).isAfter(now)) {
+            return true;
+        }
+
+        // Window cap check: have we sent MAX_PER_WINDOW emails in current window?
+        Instant windowStart = user.getPasswordResetEmailCountWindowStart();
+        if (windowStart != null
+                && windowStart.plus(PASSWORD_RESET_WINDOW_HOURS, ChronoUnit.HOURS).isAfter(now)
+                && user.getPasswordResetEmailCountToday() >= PASSWORD_RESET_MAX_PER_WINDOW) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void applyRateLimitTracking(User user, Instant now) {
+        Instant windowStart = user.getPasswordResetEmailCountWindowStart();
+
+        if (windowStart == null
+                || windowStart.plus(PASSWORD_RESET_WINDOW_HOURS, ChronoUnit.HOURS).isBefore(now)) {
+            // No window yet, or window expired — start a fresh one
+            user.setPasswordResetEmailCountWindowStart(now);
+            user.setPasswordResetEmailCountToday(1);
+        } else {
+            // Still inside the current window — increment counter
+            user.setPasswordResetEmailCountToday(user.getPasswordResetEmailCountToday() + 1);
+        }
+
+        user.setLastPasswordResetEmailSentAt(now);
     }
 
     // -------------------- PASSWORD RESET PERFORM --------------------
