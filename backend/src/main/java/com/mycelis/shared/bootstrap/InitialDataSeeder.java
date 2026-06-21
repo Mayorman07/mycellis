@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -128,7 +127,6 @@ public class InitialDataSeeder {
                 .firstName(firstName)
                 .lastName(lastName)
                 .email(email)
-                .userId(UUID.randomUUID().toString())
                 .mobileNumber(mobile)
                 .encryptedPassword(passwordEncoder.encode(password))
                 .status(Status.ACTIVE)

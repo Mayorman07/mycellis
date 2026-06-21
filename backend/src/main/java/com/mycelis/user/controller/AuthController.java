@@ -4,6 +4,7 @@ import com.mycelis.user.model.request.*;
 import com.mycelis.user.model.response.LoginResponse;
 import com.mycelis.user.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +25,12 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping(path = "/login",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Login attempt for {}", request.email());
-        return ResponseEntity.ok(authService.login(request));
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        return ResponseEntity.ok(authService.login(request, httpRequest, httpResponse));
     }
 
     @PostMapping(path = "/verify", consumes = MediaType.APPLICATION_JSON_VALUE)

@@ -12,6 +12,8 @@ import com.mycelis.user.entity.User;
 import com.mycelis.user.model.request.*;
 import com.mycelis.user.model.response.LoginResponse;
 import com.mycelis.user.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,6 +23,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +44,8 @@ public class AuthServiceImpl implements AuthService {
     private static final int VERIFICATION_RESEND_COOLDOWN_SECONDS = 60;
     private static final int VERIFICATION_RESEND_MAX_PER_WINDOW = 5;
     private static final int VERIFICATION_RESEND_WINDOW_HOURS = 24;
+    private final SecurityContextRepository securityContextRepository;
+
 
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
@@ -54,13 +59,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public LoginResponse login(LoginRequest request) {
-        // Spring Security does the heavy lifting: loads user, verifies password,
-        // throws BadCredentialsException / DisabledException / LockedException
+    public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password()));
 
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        var context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(auth);
+        SecurityContextHolder.setContext(context);
+
+//         Persist to session so subsequent requests are authenticated
+        securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));

@@ -37,7 +37,10 @@ public interface UserMapper {
     @Mapping(target = "organizationId", ignore = true)
     @Mapping(target = "lastPasswordResetEmailSentAt", ignore = true)
     @Mapping(target = "passwordResetEmailCountToday", ignore = true)
-
+    @Mapping(target = "passwordResetEmailCountWindowStart", ignore = true)
+    @Mapping(target = "lastVerificationEmailSentAt", ignore = true)
+    @Mapping(target = "verificationEmailCountToday", ignore = true)
+    @Mapping(target = "verificationEmailCountWindowStart", ignore = true)
     User toEntity(UserDto dto);
 
     @Mapping(target = "roles", source = "roles", qualifiedByName = "rolesToNames")

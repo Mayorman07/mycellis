@@ -15,6 +15,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
@@ -30,6 +32,11 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
     }
 
     @Bean
@@ -61,9 +68,14 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/auth/verify",
                                 "/api/users/create",
-                                "/api/auth/resend-verification",
-                                "/api/auth/logout"
+                                "/api/auth/resend-verification"
                         )
+                )
+
+                // Persist SecurityContext to HTTP session so login is "sticky"
+                // across requests via the JSESSIONID cookie.
+                .securityContext(securityContext -> securityContext
+                        .securityContextRepository(securityContextRepository())
                 )
 
                 // Stateful sessions for the dashboard
@@ -82,8 +94,7 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/auth/verify",
                                 "/api/auth/resend-verification",
-                                "/api/users/create",
-                                "/api/auth/logout"
+                                "/api/users/create"
                         ).permitAll()
 
                         // Public static pages (frontend lives at root)
