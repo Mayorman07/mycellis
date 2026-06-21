@@ -63,6 +63,7 @@ public class UserServiceImpl implements UserService {
         dto.setEncryptedPassword(passwordEncoder.encode(request.password()));
         dto.setPassword(null);
         dto.setUserId(idGenerator.newUserId());
+        dto.setUserId(idGenerator.newUserId());
         dto.setStatus(Status.NEW);
 
         User user = userMapper.toEntity(dto);
