@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 public interface UserMapper {
 
     @Mapping(target = "encryptedPassword", ignore = true)
-    @Mapping(target = "userId", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "roles", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

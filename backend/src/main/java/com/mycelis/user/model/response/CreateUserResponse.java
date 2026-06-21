@@ -4,9 +4,10 @@ import com.mycelis.user.constant.Status;
 
 import java.time.Instant;
 import java.util.Set;
+import java.util.UUID;
 
 public record CreateUserResponse(
-        String userId,
+        UUID id,
         String firstName,
         String lastName,
         String email,
