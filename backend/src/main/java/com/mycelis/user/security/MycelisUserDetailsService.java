@@ -9,7 +9,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.core.userdetails.User.UserBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,14 +35,20 @@ public class MycelisUserDetailsService implements UserDetailsService {
                     authorities.add(new SimpleGrantedAuthority(authority.getName())));
         });
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
-                .password(user.getEncryptedPassword())
-                .authorities(authorities)
-                .disabled(user.getStatus() == Status.NEW
-                        || user.getStatus() == Status.INACTIVE
-                        || user.getStatus() == Status.DEACTIVATED)
-                .accountLocked(user.getStatus() == Status.BLOCKED)
-                .build();
+        boolean enabled = !(user.getStatus() == Status.NEW
+                || user.getStatus() == Status.INACTIVE
+                || user.getStatus() == Status.DEACTIVATED);
+        boolean accountNonLocked = user.getStatus() != Status.BLOCKED;
+
+        return new MycelisUserPrincipal(
+                user.getUserId(),
+                user.getEmail(),
+                user.getEncryptedPassword(),
+                enabled,
+                true,                  // accountNonExpired — we don't expire accounts
+                true,                  // credentialsNonExpired — we don't expire passwords (yet)
+                accountNonLocked,
+                authorities
+        );
     }
 }

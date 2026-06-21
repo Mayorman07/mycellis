@@ -19,7 +19,6 @@ import java.util.UUID;
         name = "users",
         indexes = {
                 @Index(name = "idx_users_email", columnList = "email"),
-                @Index(name = "idx_users_user_id", columnList = "user_id"),
                 @Index(name = "idx_users_status", columnList = "status"),
                 @Index(name = "idx_users_verification_token", columnList = "verification_token"),
                 @Index(name = "idx_users_password_reset_token", columnList = "password_reset_token")
@@ -48,9 +47,6 @@ public class User implements Serializable {
 
     @Column(nullable = false, length = 255, unique = true)
     private String email;
-
-    @Column(name = "user_id", nullable = false, unique = true, length = 36)
-    private String userId;
 
     @Column(name = "encrypted_password", nullable = false, length = 255)
     private String encryptedPassword;
