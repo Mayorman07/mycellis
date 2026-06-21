@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -48,29 +49,16 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager() {
-        return new org.springframework.security.authentication.ProviderManager(authenticationProvider());
+        return new ProviderManager(authenticationProvider());
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
 
         http
                 // CSRF: cookie-based token for session SPAs.
                 // withHttpOnlyFalse so JS can read it and echo it in the X-XSRF-TOKEN header.
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(csrfHandler)
-                        .ignoringRequestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/logout",
-                                "/api/auth/forgot-password",
-                                "/api/auth/reset-password",
-                                "/api/auth/verify",
-                                "/api/users/create",
-                                "/api/auth/resend-verification"
-                        )
-                )
+                .csrf(AbstractHttpConfigurer::disable)
 
                 // Persist SecurityContext to HTTP session so login is "sticky"
                 // across requests via the JSESSIONID cookie.
