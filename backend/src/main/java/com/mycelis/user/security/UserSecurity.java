@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Slf4j
 @Component("userSecurity")
 @RequiredArgsConstructor
@@ -18,25 +20,25 @@ public class UserSecurity {
 
     /**
      * Returns true if the authenticated user is the owner of the profile
-     * identified by {@code targetUserId}. Privilege checks (ADMIN, USER_READ)
+     * identified by {@code targetId}. Privilege checks (ADMIN, USER_READ)
      * are handled in @PreAuthorize SpEL, not here.
      */
     @Transactional(readOnly = true)
-    public boolean canViewProfile(String targetUserId, Authentication authentication) {
+    public boolean canViewProfile(UUID targetId, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return false;
         }
 
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof UserDetails userDetails)) {
-            assert principal != null;
-            log.warn("Unexpected principal type: {}", principal.getClass());
+            log.warn("Unexpected principal type: {}",
+                    principal == null ? "null" : principal.getClass());
             return false;
         }
 
         String authenticatedEmail = userDetails.getUsername();
 
-        return userRepository.findByUserId(targetUserId)
+        return userRepository.findById(targetId)
                 .map(User::getEmail)
                 .map(ownerEmail -> ownerEmail.equalsIgnoreCase(authenticatedEmail))
                 .orElse(false);

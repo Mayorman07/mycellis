@@ -7,19 +7,21 @@ import com.mycelis.user.model.response.UserProfileResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.UUID;
+
 public interface UserService {
 
     CreateUserResponse createUser(CreateUserRequest request);
 
-    UserProfileResponse updateUser(String userId, UpdateUserRequest request);
+    UserProfileResponse updateUser(UUID id, UpdateUserRequest request);
 
-    UserProfileResponse viewProfile(String userId);
+    UserProfileResponse viewProfile(UUID id);
 
     Page<UserProfileResponse> findAllUsers(Pageable pageable, String keyword);
 
-    void deactivateUser(String userId);
+    void deactivateUser(UUID id);
 
-    void deleteUser(String userId);
+    void deleteUser(UUID id);
 
-    void updateLastLoggedIn(String userId);
+    void updateLastLoggedIn(UUID id);
 }
