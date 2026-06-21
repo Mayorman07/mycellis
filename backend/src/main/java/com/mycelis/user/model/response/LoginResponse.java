@@ -1,9 +1,10 @@
 package com.mycelis.user.model.response;
 
 import java.util.Set;
+import java.util.UUID;
 
 public record LoginResponse(
-        String userId,
+        UUID id,
         String email,
         Set<String> roles
 ) {}

@@ -41,7 +41,7 @@ public class MycelisUserDetailsService implements UserDetailsService {
         boolean accountNonLocked = user.getStatus() != Status.BLOCKED;
 
         return new MycelisUserPrincipal(
-                user.getUserId(),
+                user.getId(),
                 user.getEmail(),
                 user.getEncryptedPassword(),
                 enabled,

@@ -72,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
                 .collect(Collectors.toSet());
 
         log.info("Successful login: {}", user.getEmail());
-        return new LoginResponse(user.getUserId(), user.getEmail(), roleNames);
+        return new LoginResponse(user.getId(), user.getEmail(), roleNames);
     }
 
     // -------------------- VERIFY EMAIL --------------------
