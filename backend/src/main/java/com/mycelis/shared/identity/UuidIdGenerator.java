@@ -11,11 +11,6 @@ public class UuidIdGenerator implements IdGenerator {
     private static final String PASSWORD_RESET_PREFIX = "pwr_";
 
     @Override
-    public String newUserId() {
-        return UUID.randomUUID().toString();
-    }
-
-    @Override
     public String newVerificationToken() {
         return VERIFICATION_PREFIX + compactUuid();
     }
