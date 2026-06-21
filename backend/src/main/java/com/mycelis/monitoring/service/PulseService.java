@@ -47,7 +47,7 @@ public interface PulseService {
      * @param limit maximum records to return (capped at 200 for payload safety)
      * @return ordered list of recent pulses
      */
-    List<PulseResponse> getRecentPulses(UUID stalkId, int limit);
+    List<PulseResponse> getRecentPulses(UUID userId, UUID stalkId, int limit);
 
     /**
      * Returns paginated pulse history for trend analysis and export.
@@ -56,7 +56,7 @@ public interface PulseService {
      * @param pageable pagination & time-range filtering configuration
      * @return page of pulse records
      */
-    Page<PulseResponse> getPulseHistory(UUID stalkId, Pageable pageable);
+    Page<PulseResponse> getPulseHistory(UUID userId, UUID stalkId, Pageable pageable);
 
     /**
      * Computes uptime percentage over a rolling time window.
@@ -66,8 +66,8 @@ public interface PulseService {
      * @param window duration to evaluate (e.g., P7D for 7 days)
      * @return uptime ratio between 0.00 and 100.00
      */
-    double calculateUptimePercentage(UUID stalkId, Duration window);
+    double calculateUptimePercentage(UUID userId, UUID stalkId, Duration window);
 
-    UptimeResponse getUptimeByWindow(UUID stalkId, String window);
+    UptimeResponse getUptimeByWindow(UUID userId, UUID stalkId, String window);
 
 }
