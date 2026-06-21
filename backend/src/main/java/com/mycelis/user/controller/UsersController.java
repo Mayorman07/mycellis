@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/users")
@@ -33,19 +35,19 @@ public class UsersController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
-    @PutMapping(path = "/{userId}",
+    @PutMapping(path = "/{id}",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserProfileResponse> updateUser(@PathVariable("userId") String userId,
+    public ResponseEntity<UserProfileResponse> updateUser(@PathVariable("id") UUID id,
                                                           @Valid @RequestBody UpdateUserRequest request) {
-        return ResponseEntity.ok(userService.updateUser(userId, request));
+        return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
-    @GetMapping(path = "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMIN') or hasAuthority('USER_READ') or @userSecurity.canViewProfile(#userId, authentication)")
-    public ResponseEntity<UserProfileResponse> viewProfile(@PathVariable("userId") String userId) {
-        return ResponseEntity.ok(userService.viewProfile(userId));
+    @GetMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('USER_READ') or @userSecurity.canViewProfile(#id, authentication)")
+    public ResponseEntity<UserProfileResponse> viewProfile(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(userService.viewProfile(id));
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -56,17 +58,17 @@ public class UsersController {
         return ResponseEntity.ok(userService.findAllUsers(pageable, keyword));
     }
 
-    @PatchMapping("/{userId}/deactivate")
+    @PatchMapping("/{id}/deactivate")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('PROFILE_DEACTIVATE')")
-    public ResponseEntity<Void> deactivateUser(@PathVariable("userId") String userId) {
-        userService.deactivateUser(userId);
+    public ResponseEntity<Void> deactivateUser(@PathVariable("id") UUID id) {
+        userService.deactivateUser(id);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{userId}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('PROFILE_DELETE')")
-    public ResponseEntity<Void> deleteUser(@PathVariable("userId") String userId) {
-        userService.deleteUser(userId);
+    public ResponseEntity<Void> deleteUser(@PathVariable("id") UUID id) {
+        userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 }

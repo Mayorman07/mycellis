@@ -27,6 +27,7 @@ import com.mycelis.notification.event.UserCreatedEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -42,7 +43,6 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final IdGenerator idGenerator;
-
 
     // -------------------- CREATE --------------------
 
@@ -62,14 +62,11 @@ public class UserServiceImpl implements UserService {
         UserDto dto = userMapper.toDto(request);
         dto.setEncryptedPassword(passwordEncoder.encode(request.password()));
         dto.setPassword(null);
-        dto.setUserId(idGenerator.newUserId());
-        dto.setUserId(idGenerator.newUserId());
         dto.setStatus(Status.NEW);
 
         User user = userMapper.toEntity(dto);
         user.getRoles().add(ownerRole);
 
-        // Generate verification token
         String verificationToken = idGenerator.newVerificationToken();
         user.setVerificationToken(verificationToken);
 
@@ -80,7 +77,6 @@ public class UserServiceImpl implements UserService {
 
         savedUser.setOrganizationId(org.getId());
 
-        // Publish event — handled AFTER_COMMIT by UserNotificationListener
         eventPublisher.publishEvent(new UserCreatedEvent(
                 savedUser.getEmail(),
                 savedUser.getFirstName(),
@@ -94,15 +90,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserProfileResponse updateUser(String userId, UpdateUserRequest request) {
-        User user = findByUserIdOrThrow(userId);
+    public UserProfileResponse updateUser(UUID id, UpdateUserRequest request) {
+        User user = findByIdOrThrow(id);
 
         if (request.firstName() != null) user.setFirstName(request.firstName());
         if (request.lastName() != null)  user.setLastName(request.lastName());
         if (request.gender() != null)    user.setGender(userMapper.mapGender(request.gender()));
         if (request.mobileNumber() != null) user.setMobileNumber(request.mobileNumber());
 
-        // dirty-checking flushes on commit; no explicit save needed
         return userMapper.toProfileResponse(user);
     }
 
@@ -110,8 +105,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserProfileResponse viewProfile(String userId) {
-        return userMapper.toProfileResponse(findByUserIdOrThrow(userId));
+    public UserProfileResponse viewProfile(UUID id) {
+        return userMapper.toProfileResponse(findByIdOrThrow(id));
     }
 
     @Override
@@ -127,31 +122,31 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deactivateUser(String userId) {
-        User user = findByUserIdOrThrow(userId);
+    public void deactivateUser(UUID id) {
+        User user = findByIdOrThrow(id);
         user.setStatus(Status.DEACTIVATED);
-        log.info("Deactivated user {}", userId);
+        log.info("Deactivated user {}", id);
     }
 
     @Override
     @Transactional
-    public void deleteUser(String userId) {
-        User user = findByUserIdOrThrow(userId);
+    public void deleteUser(UUID id) {
+        User user = findByIdOrThrow(id);
         userRepository.delete(user);
-        log.info("Deleted user {}", userId);
+        log.info("Deleted user {}", id);
     }
 
     @Override
     @Transactional
-    public void updateLastLoggedIn(String userId) {
-        User user = findByUserIdOrThrow(userId);
+    public void updateLastLoggedIn(UUID id) {
+        User user = findByIdOrThrow(id);
         user.setLastLoggedIn(Instant.now());
     }
 
     // -------------------- HELPERS --------------------
 
-    private User findByUserIdOrThrow(String userId) {
-        return userRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+    private User findByIdOrThrow(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", id.toString()));
     }
 }
