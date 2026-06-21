@@ -81,7 +81,7 @@ public class StalkServiceImpl implements StalkService {
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
         if (!stalk.getUserId().equals(userId)) {
-            throw new SecurityException("Access denied: Stalk does not belong to tenant " + userId);
+            throw new TenantAccessException("Access denied: Stalk does not belong to tenant " + userId);
         }
 
         stalk.setUrl(request.getUrl());
@@ -102,7 +102,7 @@ public class StalkServiceImpl implements StalkService {
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
         if (!stalk.getUserId().equals(userId)) {
-            throw new SecurityException("Access denied: Stalk does not belong to tenant " + userId);
+            throw new TenantAccessException("Access denied: Stalk does not belong to tenant " + userId);
         }
 
         stalkRepository.delete(stalk);
