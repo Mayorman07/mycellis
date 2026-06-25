@@ -116,15 +116,21 @@ public class StalkServiceImpl implements StalkService {
                 Duration.ofMinutes(monitoringProperties.getSlidingWindowSize())
         );
 
-        // Get metrics from the sliding window
+        long totalCount = pulseRepository.countTotalInWindow(stalkId, windowStart);
+
+        // No data in window — don't transition state. Previous state stays as-is.
+        // DORMANT is reserved for explicit user-paused stalks; we never enter it from a metrics calculation.
+        if (totalCount == 0) {
+            log.debug("Skipping state update for stalkId={}: no pulses in window", stalkId);
+            return;
+        }
+
         long successCount = pulseRepository.countSuccessesInWindow(stalkId, windowStart);
-        long totalCount = pulseRepository.countTotalInWindow(stalkId, windowStart);  // ← NEW
         Double avgLatency = pulseRepository.calculateAvgLatencyInWindow(stalkId, windowStart);
 
-        // Calculate health as success RATE (not raw count)
         double healthIndex = calculateHealthIndex(successCount, totalCount);
         StalkState newState = evaluateState(healthIndex, avgLatency, totalCount);
-        // Fetch and update the stalk entity
+
         Stalk stalk = stalkRepository.findById(stalkId)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + stalkId));
 
@@ -136,7 +142,7 @@ public class StalkServiceImpl implements StalkService {
 
         stalkRepository.save(stalk);
 
-        log.info("📊 State updated: stalkId={}, health={}%, successes={}/{} → {}",
+        log.info("State updated: stalkId={}, health={}%, successes={}/{} → {}",
                 stalkId, healthIndex, successCount, totalCount, newState);
     }
 
@@ -146,19 +152,15 @@ public class StalkServiceImpl implements StalkService {
      */
     private StalkState evaluateState(double healthIndex, Double avgLatency, long totalCount) {
         validateHealthIndex(healthIndex);
-        // No checks yet → DORMANT
-        if (totalCount == 0) {
-            return StalkState.DORMANT;
-        }
-        // All failures → DEGRADED
+
+        // All failures in the window → DEGRADED
         if (healthIndex == 0.0) {
             return StalkState.DEGRADED;
         }
-        // Now we have data and some successes
+
         return switch (getStateCategory(healthIndex)) {
             case HEALTHY_RANGE -> evaluateHealthyState(avgLatency);
-            case DEGRADED_RANGE -> StalkState.DEGRADED;
-            case LOW_HEALTH_RANGE -> StalkState.DEGRADED;  // Low but non-zero = failing
+            case DEGRADED_RANGE, LOW_HEALTH_RANGE -> StalkState.DEGRADED;
         };
     }
 
