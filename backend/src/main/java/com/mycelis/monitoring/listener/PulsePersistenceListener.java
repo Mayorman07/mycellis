@@ -13,6 +13,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Single listener for PulseCheckedEvent. Persists the pulse, then updates
+ * stalk metrics and state from the new sliding window.
+ *
+ * <p>Runs async on the {@code pulseExecutor} pool. Each pulse is its own
+ * transaction — failure to persist one pulse does not affect others.</p>
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -27,12 +34,10 @@ public class PulsePersistenceListener {
     @Transactional
     public void handlePulseChecked(PulseCheckedEvent event) {
         try {
-            // 1. Fetch Stalk Entity
             Stalk stalk = stalkRepository.findById(event.getStalkId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Stalk not found: " + event.getStalkId()));
 
-            // 2. Create and Save Pulse
             Pulse pulse = Pulse.builder()
                     .stalk(stalk)
                     .statusCode(event.getStatusCode())
@@ -45,16 +50,14 @@ public class PulsePersistenceListener {
             log.debug("Pulse persisted: stalkId={}, status={}",
                     event.getStalkId(), event.getStatusCode());
 
-            // 3. Update Stalk State immediately after saving pulse
-            // Since we are in the same transaction, the count query in the service
             stalkService.updateMetricsAndTransitionState(
                     event.getStalkId(),
                     event.getCheckedAt()
             );
 
         } catch (Exception e) {
-            log.warn("Failed to persist pulse or update state for stalk {}: {}",
-                    event.getStalkId(), e.getMessage());
+            log.error("Failed to persist pulse or update state for stalk {}: {}",
+                    event.getStalkId(), e.getMessage(), e);
         }
     }
 }
