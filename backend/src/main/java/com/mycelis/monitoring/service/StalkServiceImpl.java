@@ -1,8 +1,9 @@
 package com.mycelis.monitoring.service;
 
 import com.mycelis.shared.config.MonitoringProperties;
+import com.mycelis.monitoring.constant.LatencyState;
+import com.mycelis.monitoring.constant.ReliabilityState;
 import com.mycelis.monitoring.constant.StalkState;
-import com.mycelis.monitoring.constant.StateCategory;
 import com.mycelis.monitoring.entity.Stalk;
 import com.mycelis.shared.exception.TenantAccessException;
 import com.mycelis.monitoring.dto.requests.CreateStalkRequest;
@@ -23,6 +24,14 @@ import java.util.UUID;
 /**
  * Production implementation of Stalk lifecycle & state management.
  * Enforces tenant isolation, atomic metric updates, and strict state machine transitions.
+ *
+ * <p>State is modeled across two orthogonal axes:
+ * <ul>
+ *   <li>{@link ReliabilityState} — derived from success rate.</li>
+ *   <li>{@link LatencyState} — derived from average latency.</li>
+ * </ul>
+ * The legacy {@code currentState} field is kept in sync via {@link #deriveLegacyState}
+ * until all readers migrate to the two-axis model.</p>
  */
 @Slf4j
 @Service
@@ -35,6 +44,7 @@ public class StalkServiceImpl implements StalkService {
 
     @Override
     @Transactional
+    @SuppressWarnings("deprecation")
     public StalkResponse createStalk(UUID userId, CreateStalkRequest request) {
         validateTimeoutAgainstCycle(request.getTimeoutSeconds());
         Stalk stalk = Stalk.builder()
@@ -44,6 +54,8 @@ public class StalkServiceImpl implements StalkService {
                 .growthIntervalSeconds(request.getGrowthIntervalSeconds())
                 .timeoutSeconds(request.getTimeoutSeconds())
                 .currentState(StalkState.HEALTHY)
+                .reliabilityState(ReliabilityState.HEALTHY)
+                .latencyState(LatencyState.NORMAL)
                 .healthIndex(0.0)
                 .consecutiveFailures(0)
                 .isActive(true)
@@ -113,6 +125,7 @@ public class StalkServiceImpl implements StalkService {
 
     @Override
     @Transactional
+    @SuppressWarnings("deprecation")
     public void updateMetricsAndTransitionState(UUID stalkId, Instant checkCompletedAt) {
         Instant windowStart = checkCompletedAt.minus(
                 Duration.ofMinutes(monitoringProperties.getSlidingWindowMinutes())
@@ -131,7 +144,8 @@ public class StalkServiceImpl implements StalkService {
         Double avgLatency = pulseRepository.calculateAvgLatencyInWindow(stalkId, windowStart);
 
         double healthIndex = calculateHealthIndex(successCount, totalCount);
-        StalkState newState = evaluateState(healthIndex, avgLatency, totalCount);
+        ReliabilityState reliability = evaluateReliability(healthIndex, totalCount);
+        LatencyState latency = evaluateLatency(avgLatency);
 
         Stalk stalk = stalkRepository.findById(stalkId)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + stalkId));
@@ -139,56 +153,79 @@ public class StalkServiceImpl implements StalkService {
         stalk.setHealthIndex(roundToTwoDecimals(healthIndex));
         stalk.setAverageLatencyMs(avgLatency != null ? Math.round(avgLatency) : 0L);
         stalk.setLast10SuccessCount((int) successCount);
-        stalk.setCurrentState(newState);
+
+        // Write new two-axis state
+        stalk.setReliabilityState(reliability);
+        stalk.setLatencyState(latency);
+
+        // Backward-compatibility shim: keep legacy currentState in sync until readers migrate
+        stalk.setCurrentState(deriveLegacyState(reliability, latency));
+
         stalk.setUpdatedAt(Instant.now());
 
         stalkRepository.save(stalk);
 
-        log.info("State updated: stalkId={}, health={}%, successes={}/{} → {}",
-                stalkId, healthIndex, successCount, totalCount, newState);
+        log.info("State updated: stalkId={}, health={}%, successes={}/{} → reliability={}, latency={}",
+                stalkId, healthIndex, successCount, totalCount, reliability, latency);
     }
 
     /**
-     * Evaluates stalk state using configurable thresholds and defensive validation.
-     * Implements explicit state machine transitions with audit logging.
+     * Determines reliability state from success rate alone.
+     * Independent of latency.
+     *
+     * <p>DORMANT is never set by metrics — it's only set by explicit user action.
+     * No-data case is guarded upstream; this method always returns HEALTHY or DEGRADED.</p>
      */
-    private StalkState evaluateState(double healthIndex, Double avgLatency, long totalCount) {
+    private ReliabilityState evaluateReliability(double healthIndex, long totalCount) {
         validateHealthIndex(healthIndex);
 
-        // All failures in the window → DEGRADED
-        if (healthIndex == 0.0) {
-            return StalkState.DEGRADED;
+        if (totalCount == 0) {
+            return ReliabilityState.DEGRADED;  // defensive; caller already guards
         }
 
-        return switch (getStateCategory(healthIndex)) {
-            case HEALTHY_RANGE -> evaluateHealthyState(avgLatency);
-            case DEGRADED_RANGE, LOW_HEALTH_RANGE -> StalkState.DEGRADED;
-        };
-    }
-
-    /**
-     * Categorizes health index into explicit ranges for clear state machine logic.
-     */
-    private StateCategory getStateCategory(double healthIndex) {
         if (healthIndex >= monitoringProperties.getHealthyThreshold()) {
-            return StateCategory.HEALTHY_RANGE;
+            return ReliabilityState.HEALTHY;
         }
-        if (healthIndex > monitoringProperties.getDegradedThreshold()) {
-            return StateCategory.DEGRADED_RANGE;
-        }
-        return StateCategory.LOW_HEALTH_RANGE;
+        return ReliabilityState.DEGRADED;
     }
 
     /**
-     * Determines if a healthy-range endpoint is STRESSED due to latency.
+     * Determines latency state from average latency alone.
+     * Independent of reliability.
+     *
+     * <p>If avgLatency is null (no successful requests in window), defaults to NORMAL —
+     * we have no evidence of slowness, and reliability tells the failure story alone.</p>
      */
-    private StalkState evaluateHealthyState(Double avgLatency) {
-        if (avgLatency != null && avgLatency >= monitoringProperties.getLatencyThresholdMs()) {
+    private LatencyState evaluateLatency(Double avgLatency) {
+        if (avgLatency == null) {
+            return LatencyState.NORMAL;
+        }
+        if (avgLatency >= monitoringProperties.getLatencyThresholdMs()) {
             log.debug("Latency threshold exceeded: {}ms >= {}ms → STRESSED",
                     avgLatency, monitoringProperties.getLatencyThresholdMs());
-            return StalkState.STRESSED;
+            return LatencyState.STRESSED;
         }
-        return StalkState.HEALTHY;
+        return LatencyState.NORMAL;
+    }
+
+    /**
+     * Derives the legacy single-state enum from the two new axes.
+     *
+     * <p>This shim exists so deprecated readers of {@code currentState}
+     * (controllers, listeners, repositories) continue to work during the migration.
+     * It will be removed when {@code currentState} is dropped.</p>
+     *
+     * @deprecated only for backward compatibility during the two-axis migration.
+     */
+    @Deprecated
+    private StalkState deriveLegacyState(ReliabilityState reliability, LatencyState latency) {
+        return switch (reliability) {
+            case DORMANT -> StalkState.DORMANT;
+            case DEGRADED -> StalkState.DEGRADED;
+            case HEALTHY -> (latency == LatencyState.STRESSED)
+                    ? StalkState.STRESSED
+                    : StalkState.HEALTHY;
+        };
     }
 
     private void validateHealthIndex(double healthIndex) {
@@ -205,7 +242,7 @@ public class StalkServiceImpl implements StalkService {
      * @return Health index 0.0 - 100.0
      */
     private double calculateHealthIndex(long successCount, long totalCount) {
-        if (totalCount == 0) return 0.0;  // No data yet → DORMANT
+        if (totalCount == 0) return 0.0;
         return Math.min(100.0, (successCount / (double) totalCount) * 100.0);
     }
 
@@ -213,6 +250,7 @@ public class StalkServiceImpl implements StalkService {
         return Math.round(value * 100.0) / 100.0;
     }
 
+    @SuppressWarnings("deprecation")
     private StalkResponse mapToResponse(Stalk stalk) {
         return StalkResponse.builder()
                 .id(stalk.getId())
