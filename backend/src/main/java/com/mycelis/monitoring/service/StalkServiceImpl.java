@@ -115,7 +115,7 @@ public class StalkServiceImpl implements StalkService {
     @Transactional
     public void updateMetricsAndTransitionState(UUID stalkId, Instant checkCompletedAt) {
         Instant windowStart = checkCompletedAt.minus(
-                Duration.ofMinutes(monitoringProperties.getSlidingWindowSize())
+                Duration.ofMinutes(monitoringProperties.getSlidingWindowMinutes())
         );
 
         long totalCount = pulseRepository.countTotalInWindow(stalkId, windowStart);

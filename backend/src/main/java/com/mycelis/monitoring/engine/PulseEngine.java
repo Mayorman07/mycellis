@@ -365,7 +365,7 @@ public class PulseEngine {
             default -> {
                 String message = e.getMessage();
                 yield e.getClass().getSimpleName() + ": " +
-                        (message != null ? message : "Unknown error");
+                        (message != null ? message : "Error currently unknown");
             }
         };
     }

@@ -57,10 +57,13 @@ public class MonitoringProperties {
     private long latencyThresholdMs = 2000L;
 
     /**
-     * Sliding window size for metric calculations (number of recent pulses).
+     * Sliding window duration for metric calculations.
+     * State is computed from all pulses within the last N minutes.
+     * Default: 10 minutes. Pulses outside this window don't influence current state.
      */
     @Min(1)
-    private int slidingWindowSize = 10;
+    @Max(1440)  // 24 hours
+    private int slidingWindowMinutes = 10;
 
     /**
      * Maximum allowed consecutive failures before forcing DORMANT state.
