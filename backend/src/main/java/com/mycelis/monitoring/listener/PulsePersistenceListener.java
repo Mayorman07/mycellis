@@ -34,12 +34,11 @@ public class PulsePersistenceListener {
     @Transactional
     public void handlePulseChecked(PulseCheckedEvent event) {
         try {
-            Stalk stalk = stalkRepository.findById(event.getStalkId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Stalk not found: " + event.getStalkId()));
+            // Lazy proxy: no SELECT issued. JPA only reads stalk.id to set the FK.
+            Stalk stalkRef = stalkRepository.getReferenceById(event.getStalkId());
 
             Pulse pulse = Pulse.builder()
-                    .stalk(stalk)
+                    .stalk(stalkRef)
                     .statusCode(event.getStatusCode())
                     .latencyMs(event.getLatencyMs())
                     .isSuccess(event.isSuccess())

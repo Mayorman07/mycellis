@@ -23,6 +23,8 @@ import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpTimeoutException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -291,15 +293,15 @@ public class PulseEngine {
      */
     private String hashUrl(String url) {
         try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] digest = md.digest(url.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < 4; i++) {
                 sb.append(String.format("%02x", digest[i]));
             }
             return sb.toString();
-        } catch (Exception e) {
-            return "unknown";
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError("MD5 must be available in every JDK", e);
         }
     }
 
