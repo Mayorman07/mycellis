@@ -277,7 +277,7 @@ public class PulseEngine {
                 .statusCode(statusCode)
                 .latencyMs(latencyMs)
                 .isSuccess(isSuccess)
-                .errorMessage(errorMessage)
+                .errorMessage(truncateErrorMessage(errorMessage))
                 .checkedAt(Instant.now())
                 .urlHash(hashUrl(stalk.getUrl()))
                 .build();
@@ -313,6 +313,16 @@ public class PulseEngine {
         if (statusCode >= 400 && statusCode < 500) return "4xx";
         if (statusCode >= 500 && statusCode < 600) return "5xx";
         return "other";
+    }
+
+    /**
+     * Truncates an error message to maxErrorMessageLength to honor the storage contract.
+     * Returns null unchanged. Adds "..." suffix when truncation occurs.
+     */
+    private String truncateErrorMessage(String message) {
+        if (message == null) return null;
+        int maxLength = monitoringProperties.getMaxErrorMessageLength();
+        return message.length() <= maxLength ? message : message.substring(0, maxLength) + "...";
     }
 
     /**
