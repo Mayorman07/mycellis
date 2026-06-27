@@ -259,6 +259,8 @@ public class StalkServiceImpl implements StalkService {
                 .growthIntervalSeconds(stalk.getGrowthIntervalSeconds())
                 .timeoutSeconds(stalk.getTimeoutSeconds())
                 .currentState(stalk.getCurrentState())
+                .reliabilityState(stalk.getReliabilityState())
+                .latencyState(stalk.getLatencyState())
                 .healthIndex(stalk.getHealthIndex())
                 .averageLatencyMs(stalk.getAverageLatencyMs())
                 .consecutiveFailures(stalk.getConsecutiveFailures())

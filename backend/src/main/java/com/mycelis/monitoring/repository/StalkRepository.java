@@ -35,7 +35,7 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
         FROM stalks
         WHERE next_check_at <= :now
           AND is_active = true
-          AND current_state != 'DORMANT'
+          AND reliability_state != 'DORMANT'
         ORDER BY next_check_at ASC
         LIMIT :limit
         FOR UPDATE SKIP LOCKED
@@ -83,7 +83,7 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
         FROM stalks
         WHERE next_check_at <= :now
           AND is_active = true
-          AND current_state != 'DORMANT'
+          AND reliability_state != 'DORMANT'
         """, nativeQuery = true)
     long countDueForCheck(@Param("now") Instant now);
 }
