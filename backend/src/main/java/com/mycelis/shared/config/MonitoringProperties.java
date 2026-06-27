@@ -1,5 +1,6 @@
 package com.mycelis.shared.config;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -157,4 +158,40 @@ public class MonitoringProperties {
     @Min(0)
     @Max(50)
     private int schedulerJitterPercent = 10;
+
+    /**
+     * Returns the maximum timeoutSeconds a user can configure on a single stalk.
+     * Anything higher than this would be silently truncated by the cycle ceiling.
+     */
+    public int getMaxAllowedTimeoutSeconds() {
+        return (int) maxCycleDuration.toSeconds();
+    }
+
+    /**
+     * Validates that internal configuration is self-consistent.
+     * Runs after Spring populates all properties.
+     *
+     * <p>The key invariant: any single stalk check must be allowed to complete within
+     * one scheduler cycle. If maxTimeoutSeconds > maxCycleDuration, users could
+     * configure a timeout that the cycle can never honor.</p>
+     */
+    @PostConstruct
+    public void validateInvariants() {
+        long maxCycleSeconds = maxCycleDuration.toSeconds();
+
+        if (defaultTimeoutSeconds > maxCycleSeconds) {
+            throw new IllegalStateException(String.format(
+                    "Configuration error: defaultTimeoutSeconds (%d) exceeds maxCycleDuration (%ds). " +
+                            "Per-stalk timeouts would be cut short by cycle termination. " +
+                            "Increase maxCycleDuration or decrease defaultTimeoutSeconds.",
+                    defaultTimeoutSeconds, maxCycleSeconds));
+        }
+
+        if (schedulerTickInterval.compareTo(maxCycleDuration) >= 0) {
+            throw new IllegalStateException(String.format(
+                    "Configuration error: schedulerTickInterval (%s) must be less than maxCycleDuration (%s). " +
+                            "Otherwise ticks would overlap before cycles complete.",
+                    schedulerTickInterval, maxCycleDuration));
+        }
+    }
 }

@@ -36,6 +36,7 @@ public class StalkServiceImpl implements StalkService {
     @Override
     @Transactional
     public StalkResponse createStalk(UUID userId, CreateStalkRequest request) {
+        validateTimeoutAgainstCycle(request.getTimeoutSeconds());
         Stalk stalk = Stalk.builder()
                 .userId(userId)
                 .url(request.getUrl())
@@ -77,6 +78,7 @@ public class StalkServiceImpl implements StalkService {
     @Override
     @Transactional
     public StalkResponse updateConfiguration(UUID userId, UUID id, CreateStalkRequest request) {
+        validateTimeoutAgainstCycle(request.getTimeoutSeconds());
         Stalk stalk = stalkRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
@@ -225,5 +227,20 @@ public class StalkServiceImpl implements StalkService {
                 .isActive(stalk.getIsActive())
                 .createdAt(stalk.getCreatedAt())
                 .build();
+    }
+
+    /**
+     * Validates that the requested timeoutSeconds fits within the system's cycle ceiling.
+     * The static DTO validation allows up to 120s, but the runtime ceiling depends on
+     * monitoringProperties.maxCycleDuration. This check enforces the dynamic ceiling.
+     */
+    private void validateTimeoutAgainstCycle(int requestedTimeoutSeconds) {
+        int maxAllowed = monitoringProperties.getMaxAllowedTimeoutSeconds();
+        if (requestedTimeoutSeconds > maxAllowed) {
+            throw new IllegalArgumentException(String.format(
+                    "timeoutSeconds (%d) exceeds the system maximum of %d seconds. " +
+                            "This is bounded by the scheduler's maxCycleDuration.",
+                    requestedTimeoutSeconds, maxAllowed));
+        }
     }
 }

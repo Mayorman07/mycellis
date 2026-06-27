@@ -54,18 +54,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class PulseEngine {
 
-
     private final MonitoringProperties monitoringProperties;
     private final MeterRegistry meterRegistry;
     private final ApplicationEventPublisher eventPublisher;
 
     private static final int MAX_CLIENT_CACHE_SIZE = 50;
 
-    // Counters for cycle-level metrics
     private final Counter cycleSuccessCounter;
     private final Counter cycleFailureCounter;
 
-    // Cache of RestClient instances keyed by timeout value (LRU-bounded)
+    /** LRU-bounded cache of RestClients keyed by their connect+read timeout value (seconds). */
     private final Map<Integer, RestClient> clientCache = Collections.synchronizedMap(
             new LinkedHashMap<Integer, RestClient>(16, 0.75f, true) {
                 @Override
@@ -75,13 +73,6 @@ public class PulseEngine {
             }
     );
 
-    /**
-     * Constructs PulseEngine with event publishing capability.
-     *
-     * @param monitoringProperties configuration for thresholds and limits
-     * @param meterRegistry Micrometer registry for observability
-     * @param eventPublisher Spring event publisher for async fan-out
-     */
     public PulseEngine(MonitoringProperties monitoringProperties,
                        MeterRegistry meterRegistry,
                        ApplicationEventPublisher eventPublisher) {
@@ -89,7 +80,6 @@ public class PulseEngine {
         this.meterRegistry = meterRegistry;
         this.eventPublisher = eventPublisher;
 
-        // Register counters for cycle metrics
         this.cycleSuccessCounter = Counter.builder("app.engine.cycle.success")
                 .description("Number of successful health checks per cycle")
                 .register(meterRegistry);
@@ -98,19 +88,11 @@ public class PulseEngine {
                 .description("Number of failed health checks per cycle")
                 .register(meterRegistry);
 
-        // Register gauge for cache size monitoring
         Gauge.builder("app.engine.client_cache.size", clientCache, Map::size)
                 .description("Number of cached RestClient instances (LRU-bounded)")
                 .register(meterRegistry);
     }
 
-    /**
-     * Creates or retrieves an HttpClient configured with the specified timeout.
-     * Caches clients to avoid recreating them for the same timeout value.
-     *
-     * @param timeoutSeconds the timeout in seconds
-     * @return configured RestClient instance
-     */
     /**
      * Returns a cached RestClient configured for the given timeout, or builds and caches one.
      *
@@ -142,7 +124,6 @@ public class PulseEngine {
                 .defaultHeader("Accept", "*/*")
                 .build();
     }
-
 
     /**
      * Dispatches due stalks to virtual threads for concurrent execution.
@@ -186,7 +167,6 @@ public class PulseEngine {
             Thread.currentThread().interrupt();
         }
 
-        // Record cycle-level metrics
         cycleSuccessCounter.increment(successfulChecks.get());
         cycleFailureCounter.increment(failedChecks.get());
 
@@ -224,7 +204,6 @@ public class PulseEngine {
             long latencyMs = Duration.between(requestStart, Instant.now()).toMillis();
             boolean isSuccess = statusCode.is2xxSuccessful() || statusCode.is3xxRedirection();
 
-            // Publish event and return - virtual thread dies here
             publishPulseCheckedEvent(stalk, statusCode.value(), latencyMs, isSuccess, null);
 
             log.debug("Check succeeded: stalkId={}, status={}, latency={}ms",
@@ -232,7 +211,7 @@ public class PulseEngine {
 
             sample.stop(Timer.builder("app.engine.check.duration")
                     .tag("result", "success")
-                    .tag("status", String.valueOf(statusCode.value()))
+                    .tag("error_type", "none")
                     .tag("url_hash", hashUrl(url))
                     .register(meterRegistry));
 
@@ -241,7 +220,6 @@ public class PulseEngine {
             int statusCode = e.getStatusCode().value();
             boolean isSuccess = statusCode >= 200 && statusCode < 400;
 
-            //  Publish event for HTTP errors too
             publishPulseCheckedEvent(stalk, statusCode, latencyMs, isSuccess, e.getMessage());
 
             log.debug("Check returned error status: stalkId={}, status={}, latency={}ms, error={}",
@@ -249,7 +227,7 @@ public class PulseEngine {
 
             sample.stop(Timer.builder("app.engine.check.duration")
                     .tag("result", "http_error")
-                    .tag("status", String.valueOf(statusCode))
+                    .tag("error_type", "http_status_" + statusCodeBucket(statusCode))
                     .tag("url_hash", hashUrl(url))
                     .register(meterRegistry));
 
@@ -258,7 +236,6 @@ public class PulseEngine {
             Throwable rootCause = e.getCause() != null ? e.getCause() : e;
             String errorMessage = classifyException(rootCause, timeoutSeconds);
 
-            //  Publish event for network errors
             publishPulseCheckedEvent(stalk, 0, latencyMs, false, errorMessage);
 
             log.warn("Network error: stalkId={}, latency={}ms, error={}",
@@ -275,7 +252,6 @@ public class PulseEngine {
             Throwable rootCause = e.getCause() != null ? e.getCause() : e;
             String errorMessage = "UNEXPECTED: " + classifyException(rootCause, timeoutSeconds);
 
-            // Publish event for unexpected errors
             publishPulseCheckedEvent(stalk, 0, latencyMs, false, errorMessage);
 
             log.error("Unexpected error: stalkId={}, latency={}ms, error={}",
@@ -283,7 +259,7 @@ public class PulseEngine {
 
             sample.stop(Timer.builder("app.engine.check.duration")
                     .tag("result", "unexpected_error")
-                    .tag("error_type", rootCause.getClass().getSimpleName())
+                    .tag("error_type", "other")
                     .tag("url_hash", hashUrl(url))
                     .register(meterRegistry));
         }
@@ -297,7 +273,7 @@ public class PulseEngine {
                                           boolean isSuccess, String errorMessage) {
         PulseCheckedEvent event = PulseCheckedEvent.builder()
                 .stalkId(stalk.getId())
-                .userId(stalk.getUserId())  // Pass tenant ID for isolation in listeners
+                .userId(stalk.getUserId())
                 .statusCode(statusCode)
                 .latencyMs(latencyMs)
                 .isSuccess(isSuccess)
@@ -308,12 +284,12 @@ public class PulseEngine {
 
         eventPublisher.publishEvent(event);
     }
+
     /**
      * Creates a low-cardinality hash of the URL for metrics tagging.
      * Avoids high-cardinality explosion from unique URLs.
      */
     private String hashUrl(String url) {
-        // Simple hash: first 8 chars of MD5 (good enough for grouping)
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
             byte[] digest = md.digest(url.getBytes(java.nio.charset.StandardCharsets.UTF_8));
@@ -325,6 +301,18 @@ public class PulseEngine {
         } catch (Exception e) {
             return "unknown";
         }
+    }
+
+    /**
+     * Maps an HTTP status code to a low-cardinality bucket for metric tags.
+     * Returns "2xx", "3xx", "4xx", "5xx", or "other".
+     */
+    private String statusCodeBucket(int statusCode) {
+        if (statusCode >= 200 && statusCode < 300) return "2xx";
+        if (statusCode >= 300 && statusCode < 400) return "3xx";
+        if (statusCode >= 400 && statusCode < 500) return "4xx";
+        if (statusCode >= 500 && statusCode < 600) return "5xx";
+        return "other";
     }
 
     /**
