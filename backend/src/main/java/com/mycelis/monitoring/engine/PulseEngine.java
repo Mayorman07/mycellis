@@ -111,13 +111,30 @@ public class PulseEngine {
      * @param timeoutSeconds the timeout in seconds
      * @return configured RestClient instance
      */
+    /**
+     * Returns a cached RestClient configured for the given timeout, or builds and caches one.
+     *
+     * <p>The {@code timeoutSeconds} parameter is applied to BOTH the TCP connect step
+     * (HttpClient.connectTimeout) and the response-read step (factory.setReadTimeout).
+     * Without a read timeout, a server that accepts the connection but never responds
+     * would hold a virtual thread indefinitely (slow-loris pattern).</p>
+     *
+     * @param timeoutSeconds the maximum duration for connect and read, in seconds
+     * @return cached or freshly built RestClient
+     */
     private RestClient getClientForTimeout(int timeoutSeconds) {
-        // You can cache clients if needed, or create a new one each time
+        return clientCache.computeIfAbsent(timeoutSeconds, this::buildClient);
+    }
+
+    private RestClient buildClient(int timeoutSeconds) {
+        Duration timeout = Duration.ofSeconds(timeoutSeconds);
+
         HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(timeoutSeconds))
+                .connectTimeout(timeout)
                 .build();
 
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(timeout);   // critical — prevents slow-loris hangs
 
         return RestClient.builder()
                 .requestFactory(requestFactory)
