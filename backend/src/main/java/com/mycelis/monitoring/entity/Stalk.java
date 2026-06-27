@@ -1,5 +1,7 @@
 package com.mycelis.monitoring.entity;
 
+import com.mycelis.monitoring.constant.LatencyState;
+import com.mycelis.monitoring.constant.ReliabilityState;
 import com.mycelis.monitoring.constant.StalkState;
 import jakarta.persistence.*;
 import lombok.*;
@@ -54,11 +56,36 @@ public class Stalk {
     @Builder.Default
     private Integer timeoutSeconds = 30;
 
-    /** Current operational state derived from sliding-window metrics */
+    /**
+     * Legacy combined state. Retained for backward compatibility during the
+     * two-axis state migration. Will be removed once {@link #reliabilityState}
+     * and {@link #latencyState} are the single source of truth.
+     *
+     * @deprecated use {@link #reliabilityState} and {@link #latencyState}.
+     */
+    @Deprecated
     @Enumerated(EnumType.STRING)
     @Column(name = "current_state", nullable = false, length = 20)
     @Builder.Default
     private StalkState currentState = StalkState.DORMANT;
+
+    /**
+     * Reliability axis: success rate over the sliding window.
+     * Independent of latency. See {@link ReliabilityState}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reliability_state", nullable = false, length = 20)
+    @Builder.Default
+    private ReliabilityState reliabilityState = ReliabilityState.DORMANT;
+
+    /**
+     * Latency axis: avg response time over the sliding window.
+     * Independent of reliability. See {@link LatencyState}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "latency_state", nullable = false, length = 20)
+    @Builder.Default
+    private LatencyState latencyState = LatencyState.NORMAL;
 
     /** Health score (0.00–100.00) representing recent success rate */
     @Column(name = "health_index", precision = 5)
