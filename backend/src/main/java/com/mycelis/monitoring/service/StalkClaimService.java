@@ -38,7 +38,7 @@ public class StalkClaimService {
      * Atomically claims due stalks and reschedules them.
      * Transaction commits when this method returns, releasing row locks.
      */
-    @Transactional
+    @Transactional(timeout = 5)  // seconds; fail fast if DB is unhealthy
     public List<Stalk> claimDueStalks(Instant now, int limit) {
         List<Stalk> dueStalks = stalkRepository.findDueForCheck(now, limit);
 
