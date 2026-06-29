@@ -16,6 +16,21 @@ import java.util.UUID;
 public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
+
+    /**
+     * Loads a user by email with roles AND authorities eagerly fetched in a single query.
+     *
+     * <p>Use this in authentication flows where the roles/authorities will be needed
+     * (login, UserDetailsService). For non-auth lookups, prefer {@link #findByEmail(String)}
+     * to avoid wasted joins.</p>
+     */
+    @Query("""
+           SELECT DISTINCT u FROM User u
+           LEFT JOIN FETCH u.roles r
+           LEFT JOIN FETCH r.authorities
+           WHERE u.email = :email
+           """)
+    Optional<User> findByEmailWithRolesAndAuthorities(@Param("email") String email);
     Optional<User> findByVerificationToken(String token);
     Optional<User> findByPasswordResetToken(String token);
 

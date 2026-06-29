@@ -24,7 +24,7 @@ public class MycelisUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailWithRolesAndAuthorities(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("No user found with email: " + email));
 
