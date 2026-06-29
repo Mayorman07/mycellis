@@ -2,9 +2,7 @@ package com.mycelis.user.service;
 
 import com.mycelis.notification.event.PasswordResetRequestedEvent;
 import com.mycelis.notification.event.UserCreatedEvent;
-import com.mycelis.shared.exception.ConflictException;
-import com.mycelis.shared.exception.ExpiredTokenException;
-import com.mycelis.shared.exception.ResourceNotFoundException;
+import com.mycelis.shared.exception.*;
 import com.mycelis.shared.identity.IdGenerator;
 import com.mycelis.user.constant.Status;
 import com.mycelis.user.entity.User;
@@ -19,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -62,8 +61,18 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+        Authentication auth;
+        try {
+            auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+        } catch (DisabledException e) {
+            // Spring throws DisabledException for any UserDetails.enabled == false.
+            // In Mycelis that maps to Status.NEW, INACTIVE, or DEACTIVATED — and each
+            // has a different remediation. Branch on the actual status to give the
+            // client an actionable error.
+            handleDisabledLogin(request.email());
+            throw e; // unreachable; handleDisabledLogin always throws. Kept to satisfy the compiler.
+        }
 
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
@@ -75,10 +84,9 @@ public class AuthServiceImpl implements AuthService {
         // Pull identity from the principal we already authenticated against —
         // avoids a redundant findByEmail and uses the PK index for the load.
         MycelisUserPrincipal principal = (MycelisUserPrincipal) auth.getPrincipal();
-        assert principal != null;
         UUID userId = principal.getId();
 
-        // Fetch the managed entity for the write value of lastLoggedIn.
+        // Fetch the managed entity for the write part of lastLoggedIn.
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Authenticated user " + userId + " not found in database — possible race with account deletion"));
@@ -88,13 +96,40 @@ public class AuthServiceImpl implements AuthService {
         // Role names come from the Authentication itself — no need to touch
         // the lazy user.getRoles() collection again.
         Set<String> roleNames = auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority).filter(Objects::nonNull)
+                .map(GrantedAuthority::getAuthority)
                 .filter(name -> name.startsWith("ROLE_"))
                 .map(name -> name.substring("ROLE_".length()))
                 .collect(Collectors.toSet());
 
         log.info("Successful login: {}", principal.getUsername());
         return new LoginResponse(userId, principal.getUsername(), roleNames);
+    }
+
+    /**
+     * Maps a {@code Status} to the precise client-facing exception. Each branch is
+     * a different UX path:
+     *   NEW         — show "check your inbox" + offer resend.
+     *   INACTIVE    — show "account inactive, contact support" (we don't auto-reactivate yet).
+     *   DEACTIVATED — show "account closed" (terminal, no remediation path).
+     *
+     * Always throws — never returns normally.
+     */
+    private void handleDisabledLogin(String email) {
+        Status status = userRepository.findByEmail(email)
+                .map(User::getStatus)
+                .orElse(null);
+
+        log.info("Login blocked for {} with status={}", email, status);
+
+        if (status == Status.NEW) {
+            throw new AccountNotVerifiedException(
+                    "Please verify your email to continue.");
+        }
+        // INACTIVE or DEACTIVATED (or anything unexpected): treat as suspended.
+        throw new AccountSuspendedException(
+                status == Status.DEACTIVATED
+                        ? "This account has been closed."
+                        : "This account is inactive. Please contact support.");
     }
 
     // -------------------- VERIFY EMAIL --------------------
