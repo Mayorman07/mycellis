@@ -12,6 +12,7 @@ import com.mycelis.user.repository.UserRepository;
 import com.mycelis.user.security.MycelisUserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -74,11 +75,22 @@ public class AuthServiceImpl implements AuthService {
             throw e; // unreachable; handleDisabledLogin always throws. Kept to satisfy the compiler.
         }
 
+        // Session fixation defense (CWE-384): invalidate any pre-existing session
+        // before we associate it with the authenticated identity. An attacker who
+        // pre-seeded the victim's JSESSIONID is now holding a useless token; the
+        // victim gets a fresh session ID for their authenticated session.
+        // Must happen BEFORE saveContext — otherwise the auth lands in the old session.
+        HttpSession existingSession = httpRequest.getSession(false);
+        if (existingSession != null) {
+            existingSession.invalidate();
+        }
+        httpRequest.getSession(true);  // create fresh session for the authenticated identity
+
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
 
-        // Persist to session so subsequent requests are authenticated
+        // Persist to fresh session so subsequent requests are authenticated
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
         // Pull identity from the principal we already authenticated against —
