@@ -7,11 +7,11 @@ import com.mycelis.shared.exception.ExpiredTokenException;
 import com.mycelis.shared.exception.ResourceNotFoundException;
 import com.mycelis.shared.identity.IdGenerator;
 import com.mycelis.user.constant.Status;
-import com.mycelis.user.entity.Role;
 import com.mycelis.user.entity.User;
 import com.mycelis.user.model.request.*;
 import com.mycelis.user.model.response.LoginResponse;
 import com.mycelis.user.repository.UserRepository;
+import com.mycelis.user.security.MycelisUserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -29,7 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -66,20 +69,32 @@ public class AuthServiceImpl implements AuthService {
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
 
-//         Persist to session so subsequent requests are authenticated
+        // Persist to session so subsequent requests are authenticated
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+        // Pull identity from the principal we already authenticated against —
+        // avoids a redundant findByEmail and uses the PK index for the load.
+        MycelisUserPrincipal principal = (MycelisUserPrincipal) auth.getPrincipal();
+        assert principal != null;
+        UUID userId = principal.getId();
+
+        // Fetch the managed entity for the write value of lastLoggedIn.
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Authenticated user " + userId + " not found in database — possible race with account deletion"));
 
         user.setLastLoggedIn(Instant.now());
 
-        Set<String> roleNames = user.getRoles().stream()
-                .map(Role::getName)
+        // Role names come from the Authentication itself — no need to touch
+        // the lazy user.getRoles() collection again.
+        Set<String> roleNames = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).filter(Objects::nonNull)
+                .filter(name -> name.startsWith("ROLE_"))
+                .map(name -> name.substring("ROLE_".length()))
                 .collect(Collectors.toSet());
 
-        log.info("Successful login: {}", user.getEmail());
-        return new LoginResponse(user.getId(), user.getEmail(), roleNames);
+        log.info("Successful login: {}", principal.getUsername());
+        return new LoginResponse(userId, principal.getUsername(), roleNames);
     }
 
     // -------------------- VERIFY EMAIL --------------------
