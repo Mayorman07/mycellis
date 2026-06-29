@@ -44,11 +44,10 @@ public class AuthServiceImpl implements AuthService {
     private static final int VERIFICATION_RESEND_COOLDOWN_SECONDS = 60;
     private static final int VERIFICATION_RESEND_MAX_PER_WINDOW = 5;
     private static final int VERIFICATION_RESEND_WINDOW_HOURS = 24;
-    private final SecurityContextRepository securityContextRepository;
-
 
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
+    private final SecurityContextRepository securityContextRepository;
     private final PasswordEncoder passwordEncoder;
     private final IdGenerator idGenerator;
     private final ApplicationEventPublisher eventPublisher;
