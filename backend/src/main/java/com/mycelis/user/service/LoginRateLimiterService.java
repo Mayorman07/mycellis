@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -40,7 +41,7 @@ public class LoginRateLimiterService {
     /**
      * Record a failed attempt. Called whenever credentials fail to verify.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordFailure(String email, String ipAddress) {
         LoginAttempt attempt = LoginAttempt.builder()
                 .email(normalize(email))
