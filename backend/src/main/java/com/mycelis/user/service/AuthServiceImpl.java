@@ -4,6 +4,7 @@ import com.mycelis.notification.event.PasswordResetRequestedEvent;
 import com.mycelis.notification.event.UserCreatedEvent;
 import com.mycelis.shared.exception.*;
 import com.mycelis.shared.identity.IdGenerator;
+import com.mycelis.shared.util.ClientIpResolver;
 import com.mycelis.user.constant.Status;
 import com.mycelis.user.entity.User;
 import com.mycelis.user.model.request.*;
@@ -55,6 +56,9 @@ public class AuthServiceImpl implements AuthService {
     private final IdGenerator idGenerator;
     private final ApplicationEventPublisher eventPublisher;
 
+    private final LoginRateLimiterService loginRateLimiter;
+    private final ClientIpResolver clientIpResolver;
+
 
 
     // -------------------- LOGIN --------------------
@@ -62,53 +66,60 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        String email = request.email();
+        String ipAddress = clientIpResolver.resolve(httpRequest);
+
+        // Rate-limit check BEFORE we run bcrypt — saves CPU on attack traffic.
+        // We return the same BadCredentialsException as a wrong-password case
+        if (loginRateLimiter.isRateLimited(email, ipAddress)) {
+            log.warn("Login rate-limited: email={}, ip={}", email, ipAddress);
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
         Authentication auth;
         try {
             auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+                    new UsernamePasswordAuthenticationToken(email, request.password()));
         } catch (DisabledException e) {
-            // Spring throws DisabledException for any UserDetails.enabled == false.
-            // In Mycelis that maps to Status.NEW, INACTIVE, or DEACTIVATED — and each
-            // has a different remediation. Branch on the actual status to give the
-            // client an actionable error.
-            handleDisabledLogin(request.email());
-            throw e; // unreachable; handleDisabledLogin always throws. Kept to satisfy the compiler.
+            // Don't count disabled-account attempts as brute force — the password
+            // might have been correct. Treat it as a UX issue, not a security signal.
+            handleDisabledLogin(email);
+            throw e; // unreachable
+        } catch (BadCredentialsException e) {
+            // Record the failure. Rethrow unchanged.
+            loginRateLimiter.recordFailure(email, ipAddress);
+            throw e;
         }
 
         // Session fixation defense (CWE-384): invalidate any pre-existing session
-        // before we associate it with the authenticated identity. An attacker who
-        // pre-seeded the victim's JSESSIONID is now holding a useless token; the
-        // victim gets a fresh session ID for their authenticated session.
-        // Must happen BEFORE saveContext — otherwise the auth lands in the old session.
+        // before we associate it with the authenticated identity.
         HttpSession existingSession = httpRequest.getSession(false);
         if (existingSession != null) {
             existingSession.invalidate();
         }
-        httpRequest.getSession(true);  // create fresh session for the authenticated identity
+        httpRequest.getSession(true);
 
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
 
-        // Persist to fresh session so subsequent requests are authenticated
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
-        // Pull identity from the principal we already authenticated against —
-        // avoids a redundant findByEmail and uses the PK index for the load.
+        // Successful login — clear any prior failure trail for this (email, ip).
+        loginRateLimiter.clearFailures(email, ipAddress);
+
         MycelisUserPrincipal principal = (MycelisUserPrincipal) auth.getPrincipal();
+        assert principal != null;
         UUID userId = principal.getId();
 
-        // Fetch the managed entity for the write part of lastLoggedIn.
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Authenticated user " + userId + " not found in database — possible race with account deletion"));
 
         user.setLastLoggedIn(Instant.now());
 
-        // Role names come from the Authentication itself — no need to touch
-        // the lazy user.getRoles() collection again.
         Set<String> roleNames = auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
+                .map(GrantedAuthority::getAuthority).filter(Objects::nonNull)
                 .filter(name -> name.startsWith("ROLE_"))
                 .map(name -> name.substring("ROLE_".length()))
                 .collect(Collectors.toSet());
