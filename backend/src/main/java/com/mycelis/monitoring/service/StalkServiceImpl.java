@@ -45,10 +45,11 @@ public class StalkServiceImpl implements StalkService {
     @Override
     @Transactional
     @SuppressWarnings("deprecation")
-    public StalkResponse createStalk(UUID userId, CreateStalkRequest request) {
+    public StalkResponse createStalk(UUID organizationId, UUID createdByUserId, CreateStalkRequest request) {
         validateTimeoutAgainstCycle(request.getTimeoutSeconds());
         Stalk stalk = Stalk.builder()
-                .userId(userId)
+                .organizationId(organizationId)
+                .createdByUserId(createdByUserId)
                 .url(request.getUrl())
                 .nickname(request.getNickname())
                 .growthIntervalSeconds(request.getGrowthIntervalSeconds())
@@ -65,37 +66,39 @@ public class StalkServiceImpl implements StalkService {
                 .build();
 
         Stalk saved = stalkRepository.save(stalk);
-        log.info("Stalk created: id={}, userId={}, url={}", saved.getId(), userId, saved.getUrl());
+        log.info("Stalk created: id={}, orgId={}, createdBy={}, url={}",
+                saved.getId(), organizationId, createdByUserId, saved.getUrl());
         return mapToResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public StalkResponse getStalkById(UUID userId, UUID id) {
+    public StalkResponse getStalkById(UUID organizationId, UUID id) {
         Stalk stalk = stalkRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
-        if (!stalk.getUserId().equals(userId)) {
-            throw new TenantAccessException("Access denied: Stalk does not belong to tenant " + userId);
+        if (!stalk.getOrganizationId().equals(organizationId)) {
+            throw new TenantAccessException(
+                    "Access denied: stalk " + id + " does not belong to organization " + organizationId);
         }
         return mapToResponse(stalk);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<StalkResponse> getAllStalks(UUID userId, Pageable pageable) {
-        return stalkRepository.findByUserId(userId, pageable).map(this::mapToResponse);
+    public Page<StalkResponse> getAllStalks(UUID organizationId, Pageable pageable) {
+        return stalkRepository.findByOrganizationId(organizationId, pageable).map(this::mapToResponse);
     }
-
     @Override
     @Transactional
-    public StalkResponse updateConfiguration(UUID userId, UUID id, CreateStalkRequest request) {
+    public StalkResponse updateConfiguration(UUID organizationId, UUID id, CreateStalkRequest request) {
         validateTimeoutAgainstCycle(request.getTimeoutSeconds());
         Stalk stalk = stalkRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
-        if (!stalk.getUserId().equals(userId)) {
-            throw new TenantAccessException("Access denied: Stalk does not belong to tenant " + userId);
+        if (!stalk.getOrganizationId().equals(organizationId)) {
+            throw new TenantAccessException(
+                    "Access denied: stalk " + id + " does not belong to organization " + organizationId);
         }
 
         stalk.setUrl(request.getUrl());
@@ -111,16 +114,17 @@ public class StalkServiceImpl implements StalkService {
 
     @Override
     @Transactional
-    public void deleteStalk(UUID userId, UUID id) {
+    public void deleteStalk(UUID organizationId, UUID id) {
         Stalk stalk = stalkRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
-        if (!stalk.getUserId().equals(userId)) {
-            throw new TenantAccessException("Access denied: Stalk does not belong to tenant " + userId);
+        if (!stalk.getOrganizationId().equals(organizationId)) {
+            throw new TenantAccessException(
+                    "Access denied: stalk " + id + " does not belong to organization " + organizationId);
         }
 
         stalkRepository.delete(stalk);
-        log.info("Stalk deleted: id={}, userId={}", id, userId);
+        log.info("Stalk deleted: id={}, orgId={}", id, organizationId);
     }
 
     @Override

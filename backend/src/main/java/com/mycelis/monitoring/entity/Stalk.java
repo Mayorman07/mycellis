@@ -34,9 +34,20 @@ public class Stalk {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    /**Identifier for multi-user isolation*/
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    /**
+     * Tenancy filter. Every stalk belongs to an organization. All read/write
+     * access is scoped by this field. See {@code StalkServiceImpl.assertAccess}.
+     */
+    @Column(name = "organization_id", nullable = false)
+    private UUID organizationId;
+
+    /**
+     * Audit trail: the user who originally created this stalk. Retained for
+     * "created by" display and future "notify creator on incident" features.
+     * NOT used for access control — that's {@link #organizationId}.
+     */
+    @Column(name = "created_by_user_id", nullable = false)
+    private UUID createdByUserId;
 
     /** Target URL or API endpoint being monitored */
     @Column(name = "url", length = 2048, nullable = false)

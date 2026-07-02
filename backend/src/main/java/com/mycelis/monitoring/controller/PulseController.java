@@ -26,7 +26,7 @@ import java.util.UUID;
 
 /**
  * REST gateway for Pulse diagnostics and time-series analytics.
- * Service layer verifies stalk ownership against the authenticated principal.
+ * Service layer verifies stalk tenancy against the authenticated principal's organization.
  */
 @RestController
 @RequestMapping("/api/stalks/{stalkId}/pulses")
@@ -47,8 +47,9 @@ public class PulseController {
             @Parameter(description = "Number of records to return (1-200)", example = "50")
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int limit) {
 
-        log.debug("Fetching recent pulses for stalkId={}, limit={}", stalkId, limit);
-        return ResponseEntity.ok(pulseService.getRecentPulses(principal.getId(), stalkId, limit));
+        log.debug("Fetching recent pulses for stalkId={}, orgId={}, limit={}",
+                stalkId, principal.getOrganizationId(), limit);
+        return ResponseEntity.ok(pulseService.getRecentPulses(principal.getOrganizationId(), stalkId, limit));
     }
 
     @Operation(summary = "Retrieve paginated pulse history")
@@ -59,7 +60,7 @@ public class PulseController {
             @PathVariable UUID stalkId,
             @PageableDefault(size = 50, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
 
-        return ResponseEntity.ok(pulseService.getPulseHistory(principal.getId(), stalkId, pageable));
+        return ResponseEntity.ok(pulseService.getPulseHistory(principal.getOrganizationId(), stalkId, pageable));
     }
 
     @Operation(summary = "Calculate uptime percentage")
@@ -73,6 +74,6 @@ public class PulseController {
             @Pattern(regexp = "^P(\\d+D|\\d+W|\\d+M)$", message = "Window must be a valid ISO-8601 duration")
             String window) {
 
-        return ResponseEntity.ok(pulseService.getUptimeByWindow(principal.getId(), stalkId, window));
+        return ResponseEntity.ok(pulseService.getUptimeByWindow(principal.getOrganizationId(), stalkId, window));
     }
 }

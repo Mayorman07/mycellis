@@ -14,11 +14,11 @@ import java.util.UUID;
 @Builder
 public class PulseCheckedEvent {
     private final UUID stalkId;
-    private final UUID userId;          // For tenant isolation in listeners
+    private final UUID organizationId;   // For tenant isolation in listeners
     private final int statusCode;
     private final long latencyMs;
     private final boolean isSuccess;
-    private final String errorMessage;  // null if success
+    private final String errorMessage;   // null if success
     private final Instant checkedAt;
-    private final String urlHash;       // For metrics (low-cardinality)
+    private final String urlHash;        // For metrics (low-cardinality)
 }

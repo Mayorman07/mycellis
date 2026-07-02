@@ -275,7 +275,7 @@ public class PulseEngine {
                                           boolean isSuccess, String errorMessage) {
         PulseCheckedEvent event = PulseCheckedEvent.builder()
                 .stalkId(stalk.getId())
-                .userId(stalk.getUserId())
+                .organizationId(stalk.getOrganizationId())
                 .statusCode(statusCode)
                 .latencyMs(latencyMs)
                 .isSuccess(isSuccess)

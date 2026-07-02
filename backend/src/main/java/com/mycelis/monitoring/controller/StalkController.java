@@ -24,7 +24,10 @@ import java.util.UUID;
 
 /**
  * REST gateway for Stalk lifecycle management.
- * Tenant identity is resolved from the authenticated principal; never from request parameters.
+ *
+ * <p>Tenant identity is derived from the authenticated principal's {@code organizationId},
+ * never from request parameters. This is the ONLY layer that reads the principal;
+ * downstream services accept a plain {@code UUID organizationId} argument.</p>
  */
 @RestController
 @RequestMapping("/api/stalks")
@@ -43,9 +46,11 @@ public class StalkController {
             @AuthenticationPrincipal MycelisUserPrincipal principal,
             @Valid @RequestBody CreateStalkRequest request) {
 
-        UUID userId = principal.getId();
-        log.info("Creating monitoring target for userId={}, url={}", userId, request.getUrl());
-        StalkResponse response = stalkService.createStalk(userId, request);
+        log.info("Creating stalk: orgId={}, createdBy={}, url={}",
+                principal.getOrganizationId(), principal.getId(), request.getUrl());
+
+        StalkResponse response = stalkService.createStalk(
+                principal.getOrganizationId(), principal.getId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -56,17 +61,17 @@ public class StalkController {
             @AuthenticationPrincipal MycelisUserPrincipal principal,
             @PathVariable UUID id) {
 
-        return ResponseEntity.ok(stalkService.getStalkById(principal.getId(), id));
+        return ResponseEntity.ok(stalkService.getStalkById(principal.getOrganizationId(), id));
     }
 
-    @Operation(summary = "List stalks with pagination")
+    @Operation(summary = "List stalks for the authenticated user's organization")
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<StalkResponse>> listStalks(
             @AuthenticationPrincipal MycelisUserPrincipal principal,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        return ResponseEntity.ok(stalkService.getAllStalks(principal.getId(), pageable));
+        return ResponseEntity.ok(stalkService.getAllStalks(principal.getOrganizationId(), pageable));
     }
 
     @Operation(summary = "Update stalk configuration")
@@ -77,8 +82,8 @@ public class StalkController {
             @PathVariable UUID id,
             @Valid @RequestBody CreateStalkRequest request) {
 
-        log.info("Updating configuration for stalkId={}", id);
-        return ResponseEntity.ok(stalkService.updateConfiguration(principal.getId(), id, request));
+        log.info("Updating stalk configuration: stalkId={}, orgId={}", id, principal.getOrganizationId());
+        return ResponseEntity.ok(stalkService.updateConfiguration(principal.getOrganizationId(), id, request));
     }
 
     @Operation(summary = "Delete monitoring target")
@@ -88,8 +93,8 @@ public class StalkController {
             @AuthenticationPrincipal MycelisUserPrincipal principal,
             @PathVariable UUID id) {
 
-        log.info("Deleting monitoring target: stalkId={}", id);
-        stalkService.deleteStalk(principal.getId(), id);
+        log.info("Deleting stalk: stalkId={}, orgId={}", id, principal.getOrganizationId());
+        stalkService.deleteStalk(principal.getOrganizationId(), id);
         return ResponseEntity.noContent().build();
     }
 }

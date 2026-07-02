@@ -12,62 +12,35 @@ import java.util.UUID;
 
 /**
  * Contract for Pulse domain operations.
- * Governs diagnostic record ingestion, time-series retrieval,
- * and uptime/latency analytics computation.
  *
- * <p>Implementations must enforce:
- * <ul>
- *   <li>Append-only persistence (no UPDATE/DELETE on committed pulses)</li>
- *   <li>Write-queue buffering for high-throughput virtual thread ingestion</li>
- *   <li>Partition-aware queries to prevent index bloat on historical ranges</li>
- * </ul>
- * </p>
- *
+ * <p>All read paths take {@code organizationId} for tenant scoping.
+ * The associated stalk must belong to that organization or a
+ * {@link com.mycelis.shared.exception.TenantAccessException} is thrown.</p>
  */
 public interface PulseService {
 
     /**
      * Records a completed health check result.
-     * Typically invoked by Virtual Thread callback upon HTTP response resolution.
-     *
-     * @param stalkId parent monitoring target
-     * @param statusCode HTTP response code
-     * @param latencyMs round-trip duration in milliseconds
-     * @param isSuccess derived success flag (2xx/3xx = true)
-     * @param errorMessage nullable diagnostic context on failure
-     * @return persisted pulse representation
+     * Not tenant-scoped — pulse ingestion is driven by the internal scheduler,
+     * not by user-facing endpoints.
      */
     PulseResponse recordCheckResult(UUID stalkId, int statusCode, long latencyMs,
                                     boolean isSuccess, String errorMessage);
 
     /**
-     * Retrieves recent pulses for real-time dashboard rendering.
-     *
-     * @param stalkId parent monitoring target
-     * @param limit maximum records to return (capped at 200 for payload safety)
-     * @return ordered list of recent pulses
+     * Retrieves recent pulses for a stalk, tenant-scoped.
      */
-    List<PulseResponse> getRecentPulses(UUID userId, UUID stalkId, int limit);
+    List<PulseResponse> getRecentPulses(UUID organizationId, UUID stalkId, int limit);
 
     /**
-     * Returns paginated pulse history for trend analysis and export.
-     *
-     * @param stalkId parent monitoring target
-     * @param pageable pagination & time-range filtering configuration
-     * @return page of pulse records
+     * Returns paginated pulse history, tenant-scoped.
      */
-    Page<PulseResponse> getPulseHistory(UUID userId, UUID stalkId, Pageable pageable);
+    Page<PulseResponse> getPulseHistory(UUID organizationId, UUID stalkId, Pageable pageable);
 
     /**
-     * Computes uptime percentage over a rolling time window.
-     * Uses partition-pruned aggregation for O(log n) performance.
-     *
-     * @param stalkId parent monitoring target
-     * @param window duration to evaluate (e.g., P7D for 7 days)
-     * @return uptime ratio between 0.00 and 100.00
+     * Computes uptime percentage over a rolling time window, tenant-scoped.
      */
-    double calculateUptimePercentage(UUID userId, UUID stalkId, Duration window);
+    double calculateUptimePercentage(UUID organizationId, UUID stalkId, Duration window);
 
-    UptimeResponse getUptimeByWindow(UUID userId, UUID stalkId, String window);
-
+    UptimeResponse getUptimeByWindow(UUID organizationId, UUID stalkId, String window);
 }

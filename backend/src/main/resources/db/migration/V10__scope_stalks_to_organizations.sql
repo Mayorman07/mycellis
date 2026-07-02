@@ -41,12 +41,9 @@ ALTER TABLE stalks
     RENAME COLUMN user_id TO created_by_user_id;
 
 -- Step 7: also lock the User.organization_id column so future signups can't skip org creation.
+--         (The fk_users_organization constraint was already created in V4.)
 ALTER TABLE users
     ALTER COLUMN organization_id SET NOT NULL;
-
-ALTER TABLE users
-    ADD CONSTRAINT fk_users_organization
-        FOREIGN KEY (organization_id) REFERENCES organizations(id);
 
 -- Step 8: indexes for the tenancy filter.
 CREATE INDEX idx_stalks_organization_id ON stalks (organization_id);

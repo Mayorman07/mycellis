@@ -17,18 +17,16 @@ import java.util.UUID;
 /**
  * Data access layer for Stalk entities.
  * Optimized for scheduler-based distributed processing using Postgres SKIP LOCKED.
+ *
+ * <p>All tenant-scoped queries filter by {@code organizationId}, not by user id.
+ * User id (as {@code createdByUserId}) is audit metadata only.</p>
  */
 @Repository
 public interface StalkRepository extends JpaRepository<Stalk, UUID> {
 
     /**
      * Atomically claims due stalks for processing.
-     * Uses pure native Postgres SKIP LOCKED to ensure horizontal scalability without blocking.
-     * No JPA locking annotations are used to prevent SQL syntax clashes.
-     *
-     * @param now Current timestamp to filter next_check_at
-     * @param limit Max number of stalks to fetch (backpressure control)
-     * @return List of safely locked stalks ready for processing
+     * Cross-tenant by design — the scheduler processes ALL orgs' stalks.
      */
     @Query(value = """
         SELECT *
@@ -43,24 +41,18 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
     List<Stalk> findDueForCheck(@Param("now") Instant now, @Param("limit") int limit);
 
     /**
-     * Tenant-safe lookup.
+     * Tenant-safe lookup by organization.
      */
-    Optional<Stalk> findByIdAndUserId(UUID id, UUID userId);
+    Optional<Stalk> findByIdAndOrganizationId(UUID id, UUID organizationId);
 
     /**
-     * User-scoped pagination.
+     * Organization-scoped pagination for the dashboard.
      */
-    Page<Stalk> findByUserId(UUID userId, Pageable pageable);
+    Page<Stalk> findByOrganizationId(UUID organizationId, Pageable pageable);
 
     /**
      * Reschedules next execution time after a completed check.
-     * * Note: Bulk JPQL queries bypass Hibernate's @UpdateTimestamp lifecycle events,
-     * so updatedAt must be manually assigned here to ensure the audit trail remains accurate.
-     *
-     * @param id Stalk ID
-     * @param nextCheckAt New scheduled check time (with jitter)
-     * @param now Current timestamp for audit trail
-     * @return The number of rows updated (should be 1)
+     * Bulk JPQL bypasses @UpdateTimestamp so updatedAt is set manually.
      */
     @Modifying(clearAutomatically = true)
     @Query("""
@@ -76,7 +68,6 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
 
     /**
      * Counts pending work for backlog monitoring.
-     * Used to expose the 'app.scheduler.backlog.count' metric to Prometheus.
      */
     @Query(value = """
         SELECT COUNT(*)

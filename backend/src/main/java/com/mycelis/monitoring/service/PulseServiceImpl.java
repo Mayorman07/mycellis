@@ -62,8 +62,8 @@ public class PulseServiceImpl implements PulseService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PulseResponse> getRecentPulses(UUID userId, UUID stalkId, int limit) {
-        verifyStalkOwnership(userId, stalkId);
+    public List<PulseResponse> getRecentPulses(UUID organizationId, UUID stalkId, int limit) {
+        verifyStalkOwnership(organizationId, stalkId);
         int safeLimit = Math.min(limit, monitoringProperties.getMaxRecentPulses());
         return pulseRepository.findTopByStalkIdOrderByCreatedAtDesc(stalkId, PageRequest.of(0, safeLimit))
                 .stream()
@@ -73,16 +73,16 @@ public class PulseServiceImpl implements PulseService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PulseResponse> getPulseHistory(UUID userId, UUID stalkId, Pageable pageable) {
-        verifyStalkOwnership(userId, stalkId);
+    public Page<PulseResponse> getPulseHistory(UUID organizationId, UUID stalkId, Pageable pageable) {
+        verifyStalkOwnership(organizationId, stalkId);
         Pageable safePageable = enforceMaxPageSize(pageable);
         return pulseRepository.findByStalkId(stalkId, safePageable).map(this::mapToResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public double calculateUptimePercentage(UUID userId, UUID stalkId, Duration window) {
-        verifyStalkOwnership(userId, stalkId);
+    public double calculateUptimePercentage(UUID organizationId, UUID stalkId, Duration window) {
+        verifyStalkOwnership(organizationId, stalkId);
         Instant windowStart = Instant.now().minus(window);
 
         long totalCount = pulseRepository.countByStalkIdAndCreatedAtAfter(stalkId, windowStart);
@@ -102,8 +102,8 @@ public class PulseServiceImpl implements PulseService {
 
     @Override
     @Transactional(readOnly = true)
-    public UptimeResponse getUptimeByWindow(UUID userId, UUID stalkId, String window) {
-        verifyStalkOwnership(userId, stalkId);
+    public UptimeResponse getUptimeByWindow(UUID organizationId, UUID stalkId, String window) {
+        verifyStalkOwnership(organizationId, stalkId);
 
         Duration duration = parseWindowToDuration(window);
         double rawUptime = calculateRawUptimeRatio(stalkId, duration);
@@ -121,12 +121,12 @@ public class PulseServiceImpl implements PulseService {
      * Verifies the stalk exists and belongs to the requesting user.
      * Throws ResourceNotFoundException if missing, TenantAccessException if cross-tenant.
      */
-    private void verifyStalkOwnership(UUID userId, UUID stalkId) {
+    private void verifyStalkOwnership(UUID organizationId, UUID stalkId) {
         Stalk stalk = stalkRepository.findById(stalkId)
                 .orElseThrow(() -> new ResourceNotFoundException("Stalk", stalkId.toString()));
 
-        if (!stalk.getUserId().equals(userId)) {
-            throw new TenantAccessException("Access denied: Stalk does not belong to tenant " + userId);
+        if (!stalk.getOrganizationId().equals(organizationId)) {
+            throw new TenantAccessException("Access denied: Stalk does not belong to organization " + organizationId);
         }
     }
 
