@@ -53,4 +53,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
            """)
     List<User> findUsersForReactivation(@Param("inactiveSince") Instant inactiveSince,
                                         @Param("reEmailCutoff") Instant reEmailCutoff);
+
+    @Query("""
+       SELECT DISTINCT u FROM User u
+       LEFT JOIN FETCH u.roles r
+       LEFT JOIN FETCH r.authorities
+       WHERE u.id = :id
+       """)
+    Optional<User> findByIdWithRolesAndAuthorities(@Param("id") UUID id);
 }
