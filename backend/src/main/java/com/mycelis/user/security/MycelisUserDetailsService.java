@@ -67,6 +67,7 @@ public class MycelisUserDetailsService implements UserDetailsService {
 
         return new MycelisUserPrincipal(
                 user.getId(),
+                user.getOrganizationId(),
                 user.getEmail(),
                 user.getEncryptedPassword(),
                 enabled,
