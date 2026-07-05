@@ -1,11 +1,13 @@
 package com.mycelis.monitoring.service;
 
 import com.mycelis.monitoring.dto.requests.CreateStalkRequest;
+import com.mycelis.monitoring.dto.responses.BatchPulsesResponse;
 import com.mycelis.monitoring.dto.responses.StalkResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -88,4 +90,18 @@ public interface StalkService {
      * @param checkCompletedAt timestamp of the finished HTTP probe
      */
     void updateMetricsAndTransitionState(UUID stalkId, Instant checkCompletedAt);
+
+    /**
+     * Retrieves recent pulses across multiple stalks in a single batched call.
+     *
+     * <p>Tenant filtering happens before the pulse query runs: any requested id not
+     * owned by {@code organizationId} is silently absent from the result — never a
+     * 403/404 — since surfacing foreign-org ids as errors would leak their existence.</p>
+     *
+     * @param stalkIds requested stalk identifiers (caller-supplied; may include foreign-org or bogus ids)
+     * @param limit max pulses to return per stalk
+     * @param organizationId authenticated caller's tenant identifier
+     * @return response keyed only by ids the organization actually owns
+     */
+    BatchPulsesResponse getBatchPulses(Set<UUID> stalkIds, int limit, UUID organizationId);
 }

@@ -1,5 +1,6 @@
 package com.mycelis.shared.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -7,6 +8,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -39,6 +41,34 @@ public class GlobalExceptionHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         pd.setTitle("Invalid Request Parameter");
         pd.setType(URI.create(BASE_URI + "invalid-parameter"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    // @Validated on @RequestParam/@PathVariable (e.g. @Min/@Max/@Size) throws this at the
+    // method level, not MethodArgumentNotValidException — no existing handler covered it,
+    // so violations were previously falling through to the generic 500 handler below.
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
+        String detail = ex.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("Invalid request parameter");
+        log.warn("Constraint violation: {}", detail);
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+        pd.setTitle("Validation Failed");
+        pd.setType(URI.create(BASE_URI + "validation-failed"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ProblemDetail handleMissingParameter(MissingServletRequestParameterException ex) {
+        log.warn("Missing required parameter: {}", ex.getParameterName());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+                "Required parameter '" + ex.getParameterName() + "' is missing");
+        pd.setTitle("Missing Request Parameter");
+        pd.setType(URI.create(BASE_URI + "missing-parameter"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }

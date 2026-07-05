@@ -1,13 +1,18 @@
 package com.mycelis.monitoring.controller;
 
 import com.mycelis.monitoring.dto.requests.CreateStalkRequest;
+import com.mycelis.monitoring.dto.responses.BatchPulsesResponse;
 import com.mycelis.monitoring.dto.responses.StalkResponse;
 import com.mycelis.monitoring.service.StalkService;
 import com.mycelis.user.security.MycelisUserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Sort;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -20,6 +25,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -72,6 +78,22 @@ public class StalkController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         return ResponseEntity.ok(stalkService.getAllStalks(principal.getOrganizationId(), pageable));
+    }
+
+    @Operation(summary = "Retrieve recent pulses across multiple stalks in one request")
+    @GetMapping("/pulses/batch")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BatchPulsesResponse> getBatchPulses(
+            @AuthenticationPrincipal MycelisUserPrincipal principal,
+            @Parameter(description = "Comma-separated stalk UUIDs (max 100)")
+            @RequestParam @Size(max = 100, message = "stalkIds must not exceed 100 ids per request") Set<UUID> stalkIds,
+            @Parameter(description = "Pulses per stalk (1-100)", example = "40")
+            @RequestParam(defaultValue = "40") @Min(1) @Max(100) int limit) {
+
+        log.info("Batch pulses requested: orgId={}, stalkCount={}, limit={}",
+                principal.getOrganizationId(), stalkIds.size(), limit);
+
+        return ResponseEntity.ok(stalkService.getBatchPulses(stalkIds, limit, principal.getOrganizationId()));
     }
 
     @Operation(summary = "Update stalk configuration")

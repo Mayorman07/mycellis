@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -77,4 +78,13 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
           AND reliability_state != 'DORMANT'
         """, nativeQuery = true)
     long countDueForCheck(@Param("now") Instant now);
+
+    /**
+     * Filters the given ids down to only those owned by the organization.
+     * Used for tenant-safe batch operations where callers may supply ids
+     * belonging to other orgs (or bogus ids) — those are silently dropped
+     * by the caller rather than surfaced as an error.
+     */
+    @Query("SELECT s.id FROM Stalk s WHERE s.id IN :ids AND s.organizationId = :organizationId")
+    Set<UUID> findIdsByIdInAndOrganizationId(@Param("ids") Set<UUID> ids, @Param("organizationId") UUID organizationId);
 }

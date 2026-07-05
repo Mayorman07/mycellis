@@ -4,9 +4,12 @@ import com.mycelis.shared.config.MonitoringProperties;
 import com.mycelis.monitoring.constant.LatencyState;
 import com.mycelis.monitoring.constant.ReliabilityState;
 import com.mycelis.monitoring.constant.StalkState;
+import com.mycelis.monitoring.entity.Pulse;
 import com.mycelis.monitoring.entity.Stalk;
 import com.mycelis.shared.exception.TenantAccessException;
 import com.mycelis.monitoring.dto.requests.CreateStalkRequest;
+import com.mycelis.monitoring.dto.responses.BatchPulsesResponse;
+import com.mycelis.monitoring.dto.responses.PulseResponse;
 import com.mycelis.monitoring.dto.responses.StalkResponse;
 import com.mycelis.monitoring.repository.PulseRepository;
 import com.mycelis.monitoring.repository.StalkRepository;
@@ -19,7 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Production implementation of Stalk lifecycle & state management.
@@ -171,6 +178,54 @@ public class StalkServiceImpl implements StalkService {
 
         log.info("State updated: stalkId={}, health={}%, successes={}/{} → reliability={}, latency={}",
                 stalkId, healthIndex, successCount, totalCount, reliability, latency);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BatchPulsesResponse getBatchPulses(Set<UUID> stalkIds, int limit, UUID organizationId) {
+        if (stalkIds.isEmpty()) {
+            return BatchPulsesResponse.builder().pulsesByStalkId(Map.of()).build();
+        }
+
+        // Tenant filtering happens BEFORE the pulse query runs — foreign-org or bogus
+        // ids are silently dropped here, never surfaced as a 403/404 to the caller.
+        Set<UUID> ownedIds = stalkRepository.findIdsByIdInAndOrganizationId(stalkIds, organizationId);
+        if (ownedIds.isEmpty()) {
+            log.debug("Batch pulses: none of {} requested stalkIds belong to orgId={}",
+                    stalkIds.size(), organizationId);
+            return BatchPulsesResponse.builder().pulsesByStalkId(Map.of()).build();
+        }
+
+        List<Pulse> pulses = pulseRepository.findRecentByStalkIds(ownedIds, limit);
+
+        Map<UUID, List<PulseResponse>> grouped = pulses.stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getStalk().getId(),
+                        Collectors.mapping(this::mapToResponse, Collectors.toList())));
+
+        // Every owned id gets a key even with zero pulses — the frontend shouldn't
+        // have to distinguish "no data yet" from "id wasn't in the response".
+        for (UUID ownedId : ownedIds) {
+            grouped.putIfAbsent(ownedId, List.of());
+        }
+
+        log.info("Batch pulses returned: orgId={}, requested={}, owned={}, totalPulses={}",
+                organizationId, stalkIds.size(), ownedIds.size(), pulses.size());
+
+        return BatchPulsesResponse.builder().pulsesByStalkId(grouped).build();
+    }
+
+    private PulseResponse mapToResponse(Pulse pulse) {
+        return PulseResponse.builder()
+                .id(pulse.getId())
+                .stalkId(pulse.getStalk().getId())
+                .statusCode(pulse.getStatusCode())
+                .latencyMs(pulse.getLatencyMs())
+                .isSuccess(pulse.getIsSuccess())
+                .errorMessage(pulse.getErrorMessage())
+                .responseSizeBytes(pulse.getResponseSizeBytes())
+                .createdAt(pulse.getCreatedAt())
+                .build();
     }
 
     /**
