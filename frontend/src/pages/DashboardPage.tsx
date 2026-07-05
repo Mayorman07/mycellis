@@ -4,6 +4,7 @@ import { listStalks } from '../lib/api/stalks';
 import { DashboardHeader } from '../components/dashboard/DashboardHeader';
 import { DashboardHero } from '../components/dashboard/DashboardHero';
 import { KpiStrip } from '../components/dashboard/KpiStrip';
+import { StalkTable } from '../components/dashboard/StalkTable';
 
 export default function DashboardPage() {
   const session = useSession();
@@ -39,9 +40,8 @@ export default function DashboardPage() {
               lastSyncedAt={stalksQuery.dataUpdatedAt}
             />
             <KpiStrip stalks={stalks} />
-            {/* TEMPORARY: placeholder for stalk list. Replaced in Commit 3. */}
-            <div className="mt-8 border-t border-hairline pt-6">
-              <p className="text-sm text-ink-muted">Stalk list arrives in Commit 3.</p>
+            <div className="mt-8">
+              <StalkTable stalks={stalks} />
             </div>
           </>
         )}
