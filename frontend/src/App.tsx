@@ -7,6 +7,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ResendVerificationPage from './pages/ResendVerificationPage';
 import DashboardPage from './pages/DashboardPage';
+import { ProtectedRoute } from './routes/ProtectedRoute';
 
 export default function App() {
   return (
@@ -19,7 +20,9 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/resend-verification" element={<ResendVerificationPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
