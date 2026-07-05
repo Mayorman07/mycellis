@@ -69,3 +69,88 @@ export interface ApiErrorBody {
   instance?: string;
   timestamp?: string;
 }
+
+// Problem Details (RFC 9457), as returned by the global exception handler
+export type ProblemDetail = {
+  type: string;
+  title: string;
+  status: number;
+  detail: string;
+  instance?: string;
+  timestamp?: string;
+};
+
+// Dashboard domain
+
+export type PlanTier = 'FREE' | 'PRO' | 'ENTERPRISE';
+
+export type ReliabilityState = 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'DORMANT';
+
+export type LatencyState = 'NORMAL' | 'STRESSED';
+
+export type User = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roles: string[];
+};
+
+export type Organization = {
+  id: string;
+  name: string;
+  slug: string;
+  planTier: PlanTier;
+};
+
+export type MeResponse = {
+  user: User;
+  organization: Organization;
+};
+
+export type Stalk = {
+  id: string;
+  organizationId: string;
+  createdByUserId: string;
+  name: string;
+  url: string;
+  reliabilityState: ReliabilityState;
+  latencyState: LatencyState;
+  averageLatencyMs: number | null;
+  healthIndex: number;
+  consecutiveFailures: number;
+  /** @deprecated legacy pre-V10 state field, retained for backward compat */
+  currentState: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Pulse = {
+  id: string;
+  stalkId: string;
+  reliabilityState: ReliabilityState;
+  latencyState: LatencyState;
+  latencyMs: number | null;
+  statusCode: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+};
+
+export type UptimeResponse = {
+  uptimePercent: number;
+  windowStart: string;
+  windowEnd: string;
+};
+
+// Mirrors Spring's Page<T> JSON shape
+export type PageResponse<T> = {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+};
