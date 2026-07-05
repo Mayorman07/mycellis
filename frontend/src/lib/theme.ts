@@ -37,3 +37,10 @@ export function useTheme(): [Theme, (theme: Theme) => void] {
 
   return [theme, set];
 }
+
+const CYCLE_ORDER: Theme[] = ['cream', 'white', 'black'];
+
+export function cycleTheme(current: Theme): Theme {
+  const nextIndex = (CYCLE_ORDER.indexOf(current) + 1) % CYCLE_ORDER.length;
+  return CYCLE_ORDER[nextIndex];
+}
