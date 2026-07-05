@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# build-time-only font asset for favicon generation
+scripts/fonts/
