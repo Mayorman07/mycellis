@@ -25,7 +25,7 @@ export function StalkRow({ stalk, onClick }: StalkRowProps) {
       <div className="flex items-center gap-3 min-w-0">
         <StatusDot reliabilityState={stalk.reliabilityState} />
         <div className="min-w-0">
-          <p className="font-display text-[18px] text-ink truncate">{stalk.name}</p>
+          <p className="font-display text-[18px] text-ink truncate">{stalk.nickname}</p>
           <p className="font-mono text-[12px] text-ink-muted truncate">{stalk.url}</p>
         </div>
       </div>

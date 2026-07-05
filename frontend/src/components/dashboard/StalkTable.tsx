@@ -23,7 +23,7 @@ export function StalkTable({ stalks }: StalkTableProps) {
         <StalkRow
           key={stalk.id}
           stalk={stalk}
-          onClick={() => console.log(`Stalk clicked: ${stalk.name} - detail page coming in a later commit`)}
+          onClick={() => console.log(`Stalk clicked: ${stalk.nickname} - detail page coming in a later commit`)}
         />
       ))}
     </div>

@@ -112,13 +112,15 @@ export type Stalk = {
   id: string;
   organizationId: string;
   createdByUserId: string;
-  name: string;
+  nickname: string;
   url: string;
   reliabilityState: ReliabilityState;
   latencyState: LatencyState;
   averageLatencyMs: number | null;
   healthIndex: number;
   consecutiveFailures: number;
+  growthIntervalSeconds: number;
+  timeoutSeconds: number;
   /** @deprecated legacy pre-V10 state field, retained for backward compat */
   currentState: string;
   isActive: boolean;
