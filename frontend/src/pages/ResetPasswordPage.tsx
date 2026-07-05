@@ -1,3 +1,3 @@
 export default function ResetPasswordPage() {
-  return <div className="p-8 text-mycellis-ink">Reset password page coming soon.</div>;
+  return <div className="p-8 text-ink">Reset password page coming soon.</div>;
 }

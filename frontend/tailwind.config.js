@@ -7,24 +7,36 @@ export default {
   theme: {
     extend: {
       colors: {
-        mycellis: {
-          teal: '#0d7377',
-          'teal-hover': '#0a5d60',
-          aquamarine: '#7fffd4',
-          ink: '#0a2e2f',
-          'text-secondary': '#4a6566',
-          'text-muted': '#8aa6a7',
-          'bg-page': '#f1f5f5',
-          'bg-card': '#ffffff',
-          'bg-subtle': '#f5faf9',
-          border: '#d8e8e8',
+        surface: {
+          DEFAULT: 'var(--color-surface)',
+          raised: 'var(--color-surface-raised)',
+          sunken: 'var(--color-surface-sunken)',
         },
-        status: {
-          healthy: '#22c55e',
-          stressed: '#f59e0b',
-          down: '#ef4444',
-          dormant: '#94a3b8',
+        ink: {
+          DEFAULT: 'var(--color-ink)',
+          muted: 'var(--color-ink-muted)',
+          subtle: 'var(--color-ink-subtle)',
         },
+        hairline: {
+          DEFAULT: 'var(--color-hairline)',
+          strong: 'var(--color-hairline-strong)',
+        },
+        brand: {
+          DEFAULT: 'var(--color-brand)',
+          hover: 'var(--color-brand-hover)',
+          fg: 'var(--color-brand-fg)',
+        },
+        accent: 'var(--color-accent)',
+        state: {
+          healthy: 'var(--color-state-healthy)',
+          stressed: 'var(--color-state-stressed)',
+          down: 'var(--color-state-down)',
+          dormant: 'var(--color-state-dormant)',
+        },
+      },
+      fontFamily: {
+        display: ['Fraunces', 'serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
     },
   },
