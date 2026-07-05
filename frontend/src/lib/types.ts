@@ -145,6 +145,10 @@ export type UptimeResponse = {
   windowEnd: string;
 };
 
+export type BatchPulsesResponse = {
+  pulsesByStalkId: Record<string, Pulse[]>;
+};
+
 // Mirrors Spring's Page<T> JSON shape
 export type PageResponse<T> = {
   content: T[];

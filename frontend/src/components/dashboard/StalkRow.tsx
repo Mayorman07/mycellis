@@ -1,19 +1,23 @@
-import type { Stalk } from '../../lib/types';
+import type { Pulse, Stalk } from '../../lib/types';
 import { StatusDot } from './StatusDot';
 import { StatePill } from './StatePill';
-import { SparklinePlaceholder } from './SparklinePlaceholder';
+import { Sparkline } from './Sparkline';
 
 type StalkRowProps = {
   stalk: Stalk;
+  pulses: Pulse[];
   onClick: () => void;
 };
 
 const GRID_COLS = 'grid-cols-[2fr_1fr_2fr_0.5fr_0.5fr_0.3fr]';
 
-export function StalkRow({ stalk, onClick }: StalkRowProps) {
-  // TEMPORARY: displays healthIndex as uptime proxy. Real uptime from
-  // /api/stalks/{id}/pulses/uptime lands in Commit 4.
-  const uptime = stalk.healthIndex;
+export function StalkRow({ stalk, pulses, onClick }: StalkRowProps) {
+  // Uptime now derives from real pulses (Commit 3 used healthIndex as a placeholder proxy).
+  // Brand-new stalks with no pulse history yet still fall back to healthIndex.
+  const uptime =
+    pulses.length === 0
+      ? stalk.healthIndex
+      : (pulses.filter((p) => p.reliabilityState === 'HEALTHY').length / pulses.length) * 100;
   const uptimeColorClass =
     uptime >= 99 ? 'text-ink' : uptime >= 95 ? 'text-state-stressed' : 'text-state-down';
 
@@ -35,8 +39,7 @@ export function StalkRow({ stalk, onClick }: StalkRowProps) {
         <StatePill variant="latency" state={stalk.latencyState} />
       </div>
 
-      {/* TODO: real sparklines land in Commit 4 */}
-      <SparklinePlaceholder />
+      <Sparkline pulses={pulses} />
 
       <div className="font-mono text-sm text-ink">
         {stalk.averageLatencyMs === null ? (
