@@ -9,11 +9,15 @@ package com.mycelis.monitoring.constant;
  * <ul>
  *   <li>{@link #HEALTHY} — success rate at or above {@code healthyThreshold}</li>
  *   <li>{@link #DEGRADED} — success rate below {@code healthyThreshold}, including zero</li>
+ *   <li>{@link #DOWN} — per-pulse only: a hard failure (request failed, or 5xx). The
+ *       coarser stalk-level aggregate has never needed this distinction — it only
+ *       applies at single-pulse granularity, e.g. {@code PulseMapper}.</li>
  *   <li>{@link #DORMANT} — explicitly paused by user; not derived from metrics</li>
  * </ul>
  */
 public enum ReliabilityState {
     HEALTHY,
     DEGRADED,
+    DOWN,
     DORMANT
 }

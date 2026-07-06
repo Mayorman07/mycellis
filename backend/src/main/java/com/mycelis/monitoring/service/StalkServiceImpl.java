@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +49,7 @@ public class StalkServiceImpl implements StalkService {
     private final StalkRepository stalkRepository;
     private final PulseRepository pulseRepository;
     private final MonitoringProperties monitoringProperties;
+    private final PulseMapper pulseMapper;
 
     @Override
     @Transactional
@@ -189,43 +191,37 @@ public class StalkServiceImpl implements StalkService {
 
         // Tenant filtering happens BEFORE the pulse query runs — foreign-org or bogus
         // ids are silently dropped here, never surfaced as a 403/404 to the caller.
-        Set<UUID> ownedIds = stalkRepository.findIdsByIdInAndOrganizationId(stalkIds, organizationId);
-        if (ownedIds.isEmpty()) {
+        // Full entities (not just ids) so timeoutSeconds is already in scope for
+        // per-pulse state derivation below — no second query needed.
+        List<Stalk> ownedStalks = stalkRepository.findByIdInAndOrganizationId(stalkIds, organizationId);
+        if (ownedStalks.isEmpty()) {
             log.debug("Batch pulses: none of {} requested stalkIds belong to orgId={}",
                     stalkIds.size(), organizationId);
             return BatchPulsesResponse.builder().pulsesByStalkId(Map.of()).build();
         }
 
-        List<Pulse> pulses = pulseRepository.findRecentByStalkIds(ownedIds, limit);
+        Map<UUID, Stalk> ownedStalksById = ownedStalks.stream()
+                .collect(Collectors.toMap(Stalk::getId, Function.identity()));
+
+        List<Pulse> pulses = pulseRepository.findRecentByStalkIds(ownedStalksById.keySet(), limit);
 
         Map<UUID, List<PulseResponse>> grouped = pulses.stream()
                 .collect(Collectors.groupingBy(
                         p -> p.getStalk().getId(),
-                        Collectors.mapping(this::mapToResponse, Collectors.toList())));
+                        Collectors.mapping(
+                                p -> pulseMapper.toResponse(p, ownedStalksById.get(p.getStalk().getId())),
+                                Collectors.toList())));
 
         // Every owned id gets a key even with zero pulses — the frontend shouldn't
         // have to distinguish "no data yet" from "id wasn't in the response".
-        for (UUID ownedId : ownedIds) {
+        for (UUID ownedId : ownedStalksById.keySet()) {
             grouped.putIfAbsent(ownedId, List.of());
         }
 
         log.info("Batch pulses returned: orgId={}, requested={}, owned={}, totalPulses={}",
-                organizationId, stalkIds.size(), ownedIds.size(), pulses.size());
+                organizationId, stalkIds.size(), ownedStalksById.size(), pulses.size());
 
         return BatchPulsesResponse.builder().pulsesByStalkId(grouped).build();
-    }
-
-    private PulseResponse mapToResponse(Pulse pulse) {
-        return PulseResponse.builder()
-                .id(pulse.getId())
-                .stalkId(pulse.getStalk().getId())
-                .statusCode(pulse.getStatusCode())
-                .latencyMs(pulse.getLatencyMs())
-                .isSuccess(pulse.getIsSuccess())
-                .errorMessage(pulse.getErrorMessage())
-                .responseSizeBytes(pulse.getResponseSizeBytes())
-                .createdAt(pulse.getCreatedAt())
-                .build();
     }
 
     /**
@@ -280,7 +276,10 @@ public class StalkServiceImpl implements StalkService {
     private StalkState deriveLegacyState(ReliabilityState reliability, LatencyState latency) {
         return switch (reliability) {
             case DORMANT -> StalkState.DORMANT;
-            case DEGRADED -> StalkState.DEGRADED;
+            // DOWN is per-pulse only (see ReliabilityState) — stalk-level metrics never
+            // produce it, but the switch must stay exhaustive. StalkState has no DOWN
+            // equivalent either, so DEGRADED is the closest legacy mapping.
+            case DEGRADED, DOWN -> StalkState.DEGRADED;
             case HEALTHY -> (latency == LatencyState.STRESSED)
                     ? StalkState.STRESSED
                     : StalkState.HEALTHY;

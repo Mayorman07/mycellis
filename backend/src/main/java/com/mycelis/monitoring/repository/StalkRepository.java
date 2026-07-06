@@ -80,11 +80,13 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
     long countDueForCheck(@Param("now") Instant now);
 
     /**
-     * Filters the given ids down to only those owned by the organization.
-     * Used for tenant-safe batch operations where callers may supply ids
-     * belonging to other orgs (or bogus ids) — those are silently dropped
-     * by the caller rather than surfaced as an error.
+     * Filters the given ids down to only those owned by the organization, loading
+     * full entities (not just ids) so callers have timeoutSeconds etc. available for
+     * downstream per-pulse state derivation without a second query.
+     *
+     * <p>Used for tenant-safe batch operations where callers may supply ids belonging
+     * to other orgs (or bogus ids) — those are silently dropped by the caller rather
+     * than surfaced as an error.</p>
      */
-    @Query("SELECT s.id FROM Stalk s WHERE s.id IN :ids AND s.organizationId = :organizationId")
-    Set<UUID> findIdsByIdInAndOrganizationId(@Param("ids") Set<UUID> ids, @Param("organizationId") UUID organizationId);
+    List<Stalk> findByIdInAndOrganizationId(Set<UUID> ids, UUID organizationId);
 }

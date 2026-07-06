@@ -35,6 +35,7 @@ public class PulseServiceImpl implements PulseService {
     private final PulseRepository pulseRepository;
     private final StalkRepository stalkRepository;
     private final MonitoringProperties monitoringProperties;
+    private final PulseMapper pulseMapper;
 
     @Override
     @Transactional
@@ -57,26 +58,26 @@ public class PulseServiceImpl implements PulseService {
         log.debug("Pulse recorded: stalkId={}, status={}, latencyMs={}, success={}",
                 stalkId, statusCode, latencyMs, isSuccess);
 
-        return mapToResponse(saved);
+        return pulseMapper.toResponse(saved, stalk);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<PulseResponse> getRecentPulses(UUID organizationId, UUID stalkId, int limit) {
-        verifyStalkOwnership(organizationId, stalkId);
+        Stalk stalk = verifyStalkOwnership(organizationId, stalkId);
         int safeLimit = Math.min(limit, monitoringProperties.getMaxRecentPulses());
         return pulseRepository.findTopByStalkIdOrderByCreatedAtDesc(stalkId, PageRequest.of(0, safeLimit))
                 .stream()
-                .map(this::mapToResponse)
+                .map(pulse -> pulseMapper.toResponse(pulse, stalk))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<PulseResponse> getPulseHistory(UUID organizationId, UUID stalkId, Pageable pageable) {
-        verifyStalkOwnership(organizationId, stalkId);
+        Stalk stalk = verifyStalkOwnership(organizationId, stalkId);
         Pageable safePageable = enforceMaxPageSize(pageable);
-        return pulseRepository.findByStalkId(stalkId, safePageable).map(this::mapToResponse);
+        return pulseRepository.findByStalkId(stalkId, safePageable).map(pulse -> pulseMapper.toResponse(pulse, stalk));
     }
 
     @Override
@@ -118,16 +119,18 @@ public class PulseServiceImpl implements PulseService {
     }
 
     /**
-     * Verifies the stalk exists and belongs to the requesting user.
+     * Verifies the stalk exists and belongs to the requesting user, returning it so
+     * callers that need it for pulse mapping don't have to re-fetch it.
      * Throws ResourceNotFoundException if missing, TenantAccessException if cross-tenant.
      */
-    private void verifyStalkOwnership(UUID organizationId, UUID stalkId) {
+    private Stalk verifyStalkOwnership(UUID organizationId, UUID stalkId) {
         Stalk stalk = stalkRepository.findById(stalkId)
                 .orElseThrow(() -> new ResourceNotFoundException("Stalk", stalkId.toString()));
 
         if (!stalk.getOrganizationId().equals(organizationId)) {
             throw new TenantAccessException("Access denied: Stalk does not belong to organization " + organizationId);
         }
+        return stalk;
     }
 
     private Duration parseWindowToDuration(String window) {
@@ -148,19 +151,6 @@ public class PulseServiceImpl implements PulseService {
 
         long successCount = pulseRepository.countSuccessesInWindow(stalkId, windowStart);
         return (successCount / (double) totalCount);
-    }
-
-    private PulseResponse mapToResponse(Pulse pulse) {
-        return PulseResponse.builder()
-                .id(pulse.getId())
-                .stalkId(pulse.getStalk().getId())
-                .statusCode(pulse.getStatusCode())
-                .latencyMs(pulse.getLatencyMs())
-                .isSuccess(pulse.getIsSuccess())
-                .errorMessage(pulse.getErrorMessage())
-                .responseSizeBytes(pulse.getResponseSizeBytes())
-                .createdAt(pulse.getCreatedAt())
-                .build();
     }
 
     private String truncateErrorMessage(String message) {

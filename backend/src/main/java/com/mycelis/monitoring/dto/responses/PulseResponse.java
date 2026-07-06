@@ -1,5 +1,7 @@
 package com.mycelis.monitoring.dto.responses;
 
+import com.mycelis.monitoring.constant.LatencyState;
+import com.mycelis.monitoring.constant.ReliabilityState;
 import lombok.Builder;
 import lombok.Data;
 
@@ -42,4 +44,13 @@ public class PulseResponse {
 
     /** Immutable execution timestamp (UTC) */
     private Instant createdAt;
+
+    /**
+     * Computed at mapping time from this pulse's raw signals plus the parent stalk's
+     * timeout config — never persisted. See {@code PulseMapper}.
+     */
+    private ReliabilityState reliabilityState;
+
+    /** Computed at mapping time — never persisted. See {@code PulseMapper}. */
+    private LatencyState latencyState;
 }
