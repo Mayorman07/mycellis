@@ -9,16 +9,25 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * Maps Pulse entities to PulseResponse, computing reliabilityState and latencyState
- * at mapping time from the pulse's raw signals plus the parent stalk's timeout config.
+ * Derives per-pulse reliability and latency state from raw signals.
  *
- * <p>These two axes are never persisted on the pulse itself — they're derived fresh
- * on every read, consistent with how Stalk exposes its own two-axis state. Kept as
- * the single place this if-else logic lives; callers must not duplicate it.</p>
+ * <p>Thresholds are absolute milliseconds based on user perception research:
+ * a response above 1s reads as sluggish, above 3s as stressed, above 5s
+ * as degraded regardless of the stalk's configured timeout. Timeout is
+ * a hard ceiling, not a baseline expectation, so thresholds derived from
+ * timeout ratio misclassify slow-but-successful pulses as healthy.</p>
+ *
+ * <p>Per-stalk configurable thresholds are a planned future enhancement -
+ * the stalk parameter is retained on the derivation signature for that.</p>
  */
 @Slf4j
 @Component
 public class PulseMapper {
+
+    private static final int STRESSED_LATENCY_MS = 3000;
+    private static final int DEGRADED_LATENCY_MS = 5000;
+    private static final int SERVER_ERROR_STATUS = 500;
+    private static final int CLIENT_ERROR_STATUS = 400;
 
     public PulseResponse toResponse(Pulse pulse, Stalk stalk) {
         ReliabilityState reliabilityState;
@@ -50,6 +59,8 @@ public class PulseMapper {
                 .build();
     }
 
+    // stalk is unused today (thresholds are absolute) but kept on the signature for
+    // the planned per-stalk configurable thresholds — see class Javadoc.
     private ReliabilityState deriveReliabilityState(Pulse pulse, Stalk stalk) {
         Boolean isSuccess = pulse.getIsSuccess();
         Integer statusCode = pulse.getStatusCode();
@@ -58,13 +69,13 @@ public class PulseMapper {
         if (Boolean.FALSE.equals(isSuccess)) {
             return ReliabilityState.DOWN;
         }
-        if (Boolean.TRUE.equals(isSuccess) && statusCode != null && statusCode >= 500) {
+        if (Boolean.TRUE.equals(isSuccess) && statusCode != null && statusCode >= SERVER_ERROR_STATUS) {
             return ReliabilityState.DOWN;
         }
-        if (Boolean.TRUE.equals(isSuccess) && statusCode != null && statusCode >= 400) {
+        if (Boolean.TRUE.equals(isSuccess) && statusCode != null && statusCode >= CLIENT_ERROR_STATUS) {
             return ReliabilityState.DEGRADED;
         }
-        if (Boolean.TRUE.equals(isSuccess) && latencyMs != null && latencyMs > degradedLatencyThresholdMs(stalk)) {
+        if (Boolean.TRUE.equals(isSuccess) && latencyMs != null && latencyMs > DEGRADED_LATENCY_MS) {
             return ReliabilityState.DEGRADED;
         }
         return ReliabilityState.HEALTHY;
@@ -72,19 +83,9 @@ public class PulseMapper {
 
     private LatencyState deriveLatencyState(Pulse pulse, Stalk stalk) {
         Long latencyMs = pulse.getLatencyMs();
-        if (latencyMs != null && latencyMs > stressedLatencyThresholdMs(stalk)) {
+        if (latencyMs != null && latencyMs > STRESSED_LATENCY_MS) {
             return LatencyState.STRESSED;
         }
         return LatencyState.NORMAL;
-    }
-
-    // 75% of the stalk's timeout, in ms — a pulse this slow counts as DEGRADED even on success.
-    private long degradedLatencyThresholdMs(Stalk stalk) {
-        return stalk.getTimeoutSeconds() * 750L;
-    }
-
-    // 50% of the stalk's timeout, in ms — the STRESSED latency threshold.
-    private long stressedLatencyThresholdMs(Stalk stalk) {
-        return stalk.getTimeoutSeconds() * 500L;
     }
 }
