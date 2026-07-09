@@ -5,6 +5,8 @@ import com.mycelis.monitoring.constant.ReliabilityState;
 import com.mycelis.monitoring.dto.responses.PulseResponse;
 import com.mycelis.monitoring.entity.Pulse;
 import com.mycelis.monitoring.entity.Stalk;
+import com.mycelis.shared.config.MonitoringProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -17,17 +19,25 @@ import org.springframework.stereotype.Component;
  * a hard ceiling, not a baseline expectation, so thresholds derived from
  * timeout ratio misclassify slow-but-successful pulses as healthy.</p>
  *
+ * <p>Latency thresholds are sourced from {@link MonitoringProperties}
+ * ({@code pulseStressedLatencyMs}, {@code pulseDegradedLatencyMs}) rather than
+ * hardcoded here, so they can be tuned without a redeploy — and so drift between
+ * this per-pulse derivation and the stalk-aggregate derivation in StalkServiceImpl
+ * is at least visible in one place. HTTP status thresholds (500, 400) stay as
+ * hardcoded protocol constants below; they're not product decisions.</p>
+ *
  * <p>Per-stalk configurable thresholds are a planned future enhancement -
  * the stalk parameter is retained on the derivation signature for that.</p>
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PulseMapper {
 
-    private static final int STRESSED_LATENCY_MS = 3000;
-    private static final int DEGRADED_LATENCY_MS = 5000;
     private static final int SERVER_ERROR_STATUS = 500;
     private static final int CLIENT_ERROR_STATUS = 400;
+
+    private final MonitoringProperties monitoringProperties;
 
     public PulseResponse toResponse(Pulse pulse, Stalk stalk) {
         ReliabilityState reliabilityState;
@@ -75,7 +85,8 @@ public class PulseMapper {
         if (Boolean.TRUE.equals(isSuccess) && statusCode != null && statusCode >= CLIENT_ERROR_STATUS) {
             return ReliabilityState.DEGRADED;
         }
-        if (Boolean.TRUE.equals(isSuccess) && latencyMs != null && latencyMs > DEGRADED_LATENCY_MS) {
+        if (Boolean.TRUE.equals(isSuccess) && latencyMs != null
+                && latencyMs > monitoringProperties.getPulseDegradedLatencyMs()) {
             return ReliabilityState.DEGRADED;
         }
         return ReliabilityState.HEALTHY;
@@ -83,7 +94,7 @@ public class PulseMapper {
 
     private LatencyState deriveLatencyState(Pulse pulse, Stalk stalk) {
         Long latencyMs = pulse.getLatencyMs();
-        if (latencyMs != null && latencyMs > STRESSED_LATENCY_MS) {
+        if (latencyMs != null && latencyMs > monitoringProperties.getPulseStressedLatencyMs()) {
             return LatencyState.STRESSED;
         }
         return LatencyState.NORMAL;

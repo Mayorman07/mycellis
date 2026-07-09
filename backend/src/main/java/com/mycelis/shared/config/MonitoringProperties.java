@@ -51,10 +51,33 @@ public class MonitoringProperties {
 
     /**
      * Latency threshold in milliseconds above which a healthy endpoint is marked STRESSED.
+     * This is the STALK-AGGREGATE threshold — computed from a sliding-window average
+     * across many pulses. Do not confuse with {@link #pulseStressedLatencyMs}, which
+     * judges a single pulse in isolation.
      * Default: 2000ms (2 seconds)
      */
     @Min(100)
     private long latencyThresholdMs = 2000L;
+
+    /**
+     * Threshold in milliseconds for classifying a SINGLE pulse as STRESSED (latency axis).
+     * Event-level signal — distinct from {@link #latencyThresholdMs}, which is a windowed
+     * average across many pulses. Single-pulse spikes are noisier than sustained averages,
+     * so this runs higher than latencyThresholdMs.
+     * Default: 3000ms (3 seconds)
+     */
+    @Min(100)
+    private int pulseStressedLatencyMs = 3000;
+
+    /**
+     * Threshold in milliseconds for classifying a single pulse as DEGRADED reliability
+     * due to slowness, independent of status code checks. Event-level signal — see
+     * {@link #pulseStressedLatencyMs} for why this differs from the stalk-aggregate
+     * {@link #latencyThresholdMs}.
+     * Default: 5000ms (5 seconds)
+     */
+    @Min(100)
+    private int pulseDegradedLatencyMs = 5000;
 
     /**
      * Sliding window duration for metric calculations.
