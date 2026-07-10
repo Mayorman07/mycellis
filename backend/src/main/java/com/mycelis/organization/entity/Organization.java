@@ -45,7 +45,13 @@ public class Organization implements Serializable {
     @Builder.Default
     private PlanTier planTier = PlanTier.FREE;
 
-    @Column(name = "owner_id", nullable = false)
+    /**
+     * @deprecated source of truth is now the {@code memberships} table (the
+     * membership row with role=OWNER). Kept populated in parallel by write
+     * paths for backward compatibility. Removed in the V12 migration.
+     */
+    @Deprecated
+    @Column(name = "owner_id")
     private UUID ownerId;
 
     @CreationTimestamp

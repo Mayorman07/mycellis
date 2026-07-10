@@ -1,5 +1,8 @@
 package com.mycelis.user.service;
 
+import com.mycelis.membership.constant.MembershipRole;
+import com.mycelis.membership.entity.Membership;
+import com.mycelis.membership.repository.MembershipRepository;
 import com.mycelis.organization.entity.Organization;
 import com.mycelis.organization.service.OrganizationService;
 import com.mycelis.shared.exception.ConflictException;
@@ -39,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final OrganizationService organizationService;
+    private final MembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final ApplicationEventPublisher eventPublisher;
@@ -70,12 +74,31 @@ public class UserServiceImpl implements UserService {
         String verificationToken = idGenerator.newVerificationToken();
         user.setVerificationToken(verificationToken);
 
+        // organization_id is left unset here — it's nullable (V11) specifically so
+        // this row can be saved before its organization exists. Backfilled below
+        // once the org is created, mirroring the same two-phase pattern the seeder
+        // uses for the same reason: organizations.owner_id -> users.id and
+        // users.organization_id -> organizations.id form a circular non-deferrable
+        // FK pair, so neither row can reference the other until it already exists.
         User savedUser = userRepository.save(user);
 
         Organization org = organizationService.createForOwner(
                 request.organizationName(), savedUser.getId());
 
+        // Deprecated compat column — kept in sync in parallel with the membership
+        // row below until V12 drops it. Explicit save rather than relying on
+        // dirty-checking, so the write is unambiguous.
         savedUser.setOrganizationId(org.getId());
+        userRepository.save(savedUser);
+
+        // Source of truth going forward.
+        Membership membership = Membership.builder()
+                .userId(savedUser.getId())
+                .organizationId(org.getId())
+                .role(MembershipRole.OWNER)
+                .isPrimary(true)
+                .build();
+        membershipRepository.save(membership);
 
         eventPublisher.publishEvent(new UserCreatedEvent(
                 savedUser.getEmail(),

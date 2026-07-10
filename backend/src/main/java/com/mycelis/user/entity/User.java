@@ -86,8 +86,28 @@ public class User implements Serializable {
     @Column(name = "mobile_number", nullable = false, length = 20)
     private String mobileNumber;
 
+    /**
+     * @deprecated source of truth is now the {@code memberships} table
+     * (see {@code com.mycelis.membership.entity.Membership}, primary membership's
+     * organizationId). Kept populated in parallel by write paths for backward
+     * compatibility. Removed in the V12 migration after memberships is verified
+     * in production.
+     */
+    @Deprecated
     @Column(name = "organization_id")
     private UUID organizationId;
+
+    /**
+     * System-level super-admin flag. NOT a membership role — a super admin's
+     * cross-org access isn't scoped to any single organization, so it doesn't
+     * belong in {@code MembershipRole}. Supersedes the legacy SUPER_ADMIN
+     * {@link Role} for authorization checks going forward; the legacy role
+     * assignment is still granted in parallel where it already was, since other
+     * authority checks may still depend on it.
+     */
+    @Column(name = "is_super_admin", nullable = false)
+    @Builder.Default
+    private boolean isSuperAdmin = false;
 
     @Column(name = "last_reactivation_email_sent_date")
     private Instant lastReactivationEmailSentDate;
@@ -110,6 +130,18 @@ public class User implements Serializable {
     @Column(name = "verification_email_count_window_start")
     private Instant verificationEmailCountWindowStart;
 
+    /**
+     * Grants system-wide authorities (USER_READ, ORG_MANAGE, etc.) via
+     * {@link Role#getAuthorities()} — this responsibility is NOT deprecated
+     * and this field is NOT going away in V12.
+     *
+     * <p>What IS superseded: using this set to encode a per-organization role
+     * (e.g. a user's "OWNER"/"MEMBER" standing within their org). That's now
+     * {@code Membership.role}. SUPER_ADMIN specifically is superseded by
+     * {@link #isSuperAdmin} for the same reason — it's cross-org, not
+     * org-scoped — though the legacy SUPER_ADMIN role assignment is kept in
+     * parallel here too, since other authority checks may still depend on it.</p>
+     */
     @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinTable(
             name = "users_roles",

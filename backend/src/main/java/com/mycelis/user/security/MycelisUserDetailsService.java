@@ -1,5 +1,7 @@
 package com.mycelis.user.security;
 
+import com.mycelis.membership.entity.Membership;
+import com.mycelis.membership.repository.MembershipRepository;
 import com.mycelis.user.entity.User;
 import com.mycelis.user.constant.Status;
 import com.mycelis.user.repository.UserRepository;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,6 +26,7 @@ import java.util.UUID;
 public class MycelisUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final MembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -65,9 +69,25 @@ public class MycelisUserDetailsService implements UserDetailsService {
                 || user.getStatus() == Status.DEACTIVATED);
         boolean accountNonLocked = user.getStatus() != Status.BLOCKED;
 
+        // Eagerly resolve org membership here, at login time — never lazily per
+        // request — so the principal can answer getPrimaryOrganizationId() with
+        // zero extra DB hits for the lifetime of the session.
+        List<Membership> memberships = membershipRepository.findAllByUserId(user.getId());
+        UUID primaryOrgId = memberships.stream()
+                .filter(Membership::isPrimary)
+                .map(Membership::getOrganizationId)
+                .findFirst()
+                // Fallback to the deprecated compat column for the edge case of a
+                // user that somehow has no membership row yet (shouldn't happen —
+                // every write path creates one alongside the user).
+                .orElse(user.getOrganizationId());
+        List<UUID> organizationIds = memberships.stream().map(Membership::getOrganizationId).toList();
+
         return new MycelisUserPrincipal(
                 user.getId(),
-                user.getOrganizationId(),
+                primaryOrgId,
+                organizationIds,
+                user.isSuperAdmin(),
                 user.getEmail(),
                 user.getEncryptedPassword(),
                 enabled,
