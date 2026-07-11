@@ -15,7 +15,7 @@ type LoginErrorMessage = {
 };
 
 const INPUT_CLASSES =
-  'w-full rounded-md border-[1.5px] border-hairline-strong bg-surface-sunken px-4 py-4 text-base tracking-tight text-ink placeholder:text-ink-subtle shadow-[inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent)] transition-all duration-[250ms] ease-in-out focus:outline-none focus:border-brand focus:[box-shadow:inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent),0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]';
+  'w-full rounded-md border-[1.5px] border-[color-mix(in_srgb,var(--color-ink)_25%,transparent)] bg-surface-sunken px-4 py-4 text-base tracking-tight text-ink placeholder:text-ink-subtle shadow-[inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent)] transition-all duration-[250ms] ease-in-out focus:outline-none focus:border-brand focus:[box-shadow:inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent),0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]';
 
 type NetworkNode = {
   x: number;
@@ -214,7 +214,7 @@ export default function LoginPage() {
 
   return (
     <div className="h-screen flex bg-surface">
-      <div className="w-full lg:w-[60%] relative overflow-y-auto flex flex-col justify-center px-8 sm:px-16 py-12 bg-[radial-gradient(ellipse_at_center,transparent_0%,color-mix(in_srgb,var(--color-ink)_2%,transparent)_100%)]">
+      <div className="w-full lg:w-[60%] relative flex flex-col justify-center px-8 sm:px-16 py-12 bg-[radial-gradient(ellipse_at_center,transparent_0%,color-mix(in_srgb,var(--color-ink)_2%,transparent)_100%)]">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--color-brand)_4%,transparent)_0%,transparent_60%)]"
@@ -230,7 +230,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <h1 className="font-display font-normal text-[54px] leading-tight tracking-tight text-ink mb-3">
+          <h1 className="font-display font-normal text-[46px] leading-tight tracking-tight text-ink mb-3">
             Welcome back.
           </h1>
           <p className="max-w-[440px] text-ink-muted leading-[1.5] mb-8">
