@@ -16,7 +16,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.web.server.Cookie;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -59,6 +63,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final LoginRateLimiterService loginRateLimiter;
     private final ClientIpResolver clientIpResolver;
+    private final ServerProperties serverProperties;
 
 
 
@@ -103,8 +108,16 @@ public class AuthServiceImpl implements AuthService {
         // rememberMe only extends the session TTL — everything else about the
         // login (auth, rate limiting, fixation rotation) is unaffected. Absent
         // or false leaves the profile default (24h in prod, servlet default in dev).
+        //
+        // setMaxInactiveInterval alone only extends how long the SERVER keeps the
+        // session alive — it does not touch the browser cookie's Max-Age, which is
+        // a servlet-container-wide setting, not per-session. Without also
+        // overriding the cookie here, the browser would still discard JSESSIONID
+        // on browser close (dev) or after the profile default (24h in prod), long
+        // before the server-side session actually expired.
         if (Boolean.TRUE.equals(request.rememberMe())) {
             session.setMaxInactiveInterval(REMEMBER_ME_SECONDS);
+            setRememberMeCookie(httpResponse, session.getId());
         }
 
         var context = SecurityContextHolder.createEmptyContext();
@@ -134,6 +147,37 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Successful login: {}", principal.getUsername());
         return new LoginResponse(userId, principal.getUsername(), roleNames);
+    }
+
+    /**
+     * Re-issues the JSESSIONID cookie with an explicit Max-Age matching
+     * REMEMBER_ME_SECONDS, so the browser actually retains it for 30 days —
+     * matching (not replacing) the server-side session TTL set alongside this
+     * call. Browsers replace the existing cookie with this one since the name
+     * is identical.
+     *
+     * <p>Secure and SameSite are read from the active profile's session cookie
+     * config (ServerProperties) so this cookie carries the same security
+     * posture as the container's default one — never hardcoded here. HttpOnly
+     * is always true regardless of profile: the session must never be exposed
+     * to JS.</p>
+     */
+    private void setRememberMeCookie(HttpServletResponse response, String sessionId) {
+        var cookieConfig = serverProperties.getServlet().getSession().getCookie();
+        boolean secure = Boolean.TRUE.equals(cookieConfig.getSecure());
+        Cookie.SameSite sameSite = cookieConfig.getSameSite() != null
+                ? cookieConfig.getSameSite()
+                : Cookie.SameSite.LAX;
+
+        ResponseCookie cookie = ResponseCookie.from("JSESSIONID", sessionId)
+                .maxAge(REMEMBER_ME_SECONDS)
+                .path("/")
+                .httpOnly(true)
+                .secure(secure)
+                .sameSite(sameSite.attributeValue())
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     /**
