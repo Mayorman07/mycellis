@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private static final int REMEMBER_ME_SECONDS = 30 * 24 * 60 * 60;  // 30 days
     private static final int PASSWORD_RESET_TOKEN_TTL_HOURS = 1;
     private static final int PASSWORD_RESET_COOLDOWN_SECONDS = 60;
     private static final int PASSWORD_RESET_MAX_PER_WINDOW = 5;
@@ -97,7 +98,14 @@ public class AuthServiceImpl implements AuthService {
         if (existingSession != null) {
             existingSession.invalidate();
         }
-        httpRequest.getSession(true);
+        HttpSession session = httpRequest.getSession(true);
+
+        // rememberMe only extends the session TTL — everything else about the
+        // login (auth, rate limiting, fixation rotation) is unaffected. Absent
+        // or false leaves the profile default (24h in prod, servlet default in dev).
+        if (Boolean.TRUE.equals(request.rememberMe())) {
+            session.setMaxInactiveInterval(REMEMBER_ME_SECONDS);
+        }
 
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);

@@ -12,6 +12,10 @@ public record LoginRequest(
         String email,
 
         @NotBlank(message = "Password cannot be empty")
-        String password
+        String password,
+
+        // Nullable (not primitive) so "absent" is distinguishable from "false" —
+        // both mean the same thing today, but keeps the wire contract honest.
+        Boolean rememberMe
 
 ){}
