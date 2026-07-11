@@ -105,3 +105,29 @@ body {
     opacity: 0.92;
   }
 }
+
+/* Ambient constellation dots (auth pages) — each dot sets --dot-base-opacity
+   inline so they don't all breathe in sync. */
+@keyframes constellation-breath {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: var(--dot-base-opacity, 0.6);
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+/* Chrome/Edge force a yellow background on autofilled inputs via UA styles
+   that ignore plain background-color overrides. The box-shadow inset is the
+   standard workaround; the absurd transition-delay stops it from flashing
+   yellow before settling. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--color-surface-sunken) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}

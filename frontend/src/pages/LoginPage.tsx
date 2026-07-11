@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { login } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
+import { getTheme, setTheme } from '../lib/theme';
 
 type LocationState = { from?: string } | null;
 
@@ -12,6 +13,53 @@ type LoginErrorMessage = {
   action?: string;
   actionHref?: string;
 };
+
+const INPUT_CLASSES =
+  'w-full rounded-md border border-hairline bg-surface-sunken px-4 py-3 text-ink placeholder:text-ink-subtle transition-all duration-150 ease-in-out focus:outline-none focus:border-brand focus:[box-shadow:0_0_0_3px_color-mix(in_srgb,var(--color-brand)_15%,transparent)]';
+
+type ConstellationDot = {
+  x: number;
+  y: number;
+  r: number;
+  opacity: number;
+  duration: number;
+  delay: number;
+};
+
+// Hand-placed, not randomized — a "designed" spread, not a grid or noise.
+// Larger/brighter dots sit bottom-left (grounded); smaller/fainter ones
+// drift toward the top-right. The vertical center is deliberately sparse
+// so the area doesn't compete with the eye-level of the form column.
+const CONSTELLATION_DOTS: ConstellationDot[] = [
+  { x: 60, y: 600, r: 7, opacity: 0.9, duration: 3.2, delay: 0.2 },
+  { x: 100, y: 680, r: 6, opacity: 0.7, duration: 2.8, delay: 0.8 },
+  { x: 40, y: 480, r: 5, opacity: 0.5, duration: 3.6, delay: 0.4 },
+  { x: 140, y: 620, r: 6.5, opacity: 0.85, duration: 2.6, delay: 1.1 },
+  { x: 80, y: 740, r: 4, opacity: 0.4, duration: 3.9, delay: 0.0 },
+  { x: 180, y: 520, r: 5, opacity: 0.6, duration: 3.1, delay: 0.6 },
+  { x: 240, y: 700, r: 4.5, opacity: 0.5, duration: 2.9, delay: 1.3 },
+  { x: 280, y: 80, r: 3, opacity: 0.35, duration: 4.0, delay: 0.3 },
+  { x: 340, y: 140, r: 2.5, opacity: 0.3, duration: 3.4, delay: 0.9 },
+  { x: 300, y: 220, r: 3.5, opacity: 0.45, duration: 2.7, delay: 0.1 },
+  { x: 360, y: 60, r: 2, opacity: 0.3, duration: 3.8, delay: 1.4 },
+  { x: 220, y: 180, r: 3, opacity: 0.4, duration: 3.3, delay: 0.5 },
+  { x: 260, y: 32, r: 2.5, opacity: 0.35, duration: 2.5, delay: 1.0 },
+  { x: 160, y: 360, r: 4, opacity: 0.55, duration: 3.5, delay: 0.7 },
+];
+
+// Sparse — two loose clusters (bottom-left, top-right), not one big web.
+// Indices into CONSTELLATION_DOTS.
+const CONSTELLATION_LINES: Array<[number, number]> = [
+  [0, 1],
+  [0, 2],
+  [1, 3],
+  [3, 5],
+  [5, 6],
+  [7, 8],
+  [8, 10],
+  [9, 11],
+  [11, 12],
+];
 
 export default function LoginPage() {
   const location = useLocation();
@@ -25,6 +73,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Auth pages read as a calm, consistent front door regardless of the
+  // visitor's dashboard theme preference — locked to cream while mounted,
+  // restored the instant they navigate away. Per-page, not global: each
+  // auth page owns this decision independently (see task notes).
+  useEffect(() => {
+    const previousTheme = getTheme();
+    setTheme('cream');
+    return () => {
+      setTheme(previousTheme);
+    };
+  }, []);
 
   const loginMutation = useMutation<
     Awaited<ReturnType<typeof login>>,
@@ -52,14 +112,19 @@ export default function LoginPage() {
     <div className="min-h-screen bg-surface flex">
       <div className="w-full lg:w-[60%] flex flex-col justify-center px-8 sm:px-16 py-16">
         <div className="max-w-md w-full mx-auto lg:mx-0">
-          <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-6">
-            MYCELLIS · SIGN IN
-          </p>
+          <div className="mb-8">
+            <p className="font-mono uppercase tracking-widest text-[14px] text-ink">MYCELLIS</p>
+            <p className="font-mono tracking-wider text-[11px] text-ink-subtle mt-1">
+              Digital Ecology Monitor
+            </p>
+          </div>
 
-          <h1 className="font-display font-normal text-[48px] leading-tight tracking-tight text-ink mb-3">
+          <h1 className="font-display font-normal text-[54px] leading-tight tracking-tight text-ink mb-3">
             Welcome back.
           </h1>
-          <p className="text-ink-muted mb-8">Sign in to check on your stalks.</p>
+          <p className="max-w-[440px] text-ink-muted leading-[1.5] mb-8">
+            Your systems are waiting. Monitor every endpoint from one place.
+          </p>
 
           {errorMessage && (
             <div
@@ -105,7 +170,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@company.com"
-                className="w-full rounded-md border border-hairline bg-surface-raised px-4 py-3 text-ink placeholder:text-ink-subtle focus:outline-none focus:border-brand"
+                className={INPUT_CLASSES}
               />
             </div>
 
@@ -125,7 +190,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-md border border-hairline bg-surface-raised px-4 py-3 pr-12 text-ink placeholder:text-ink-subtle focus:outline-none focus:border-brand"
+                  className={`${INPUT_CLASSES} pr-12`}
                 />
                 <button
                   type="button"
@@ -144,11 +209,31 @@ export default function LoginPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(event) => setRememberMe(event.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-hairline accent-brand"
+                className="peer sr-only"
               />
+              <span
+                aria-hidden="true"
+                className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded border flex items-center justify-center transition-colors duration-150 ease-in-out peer-focus-visible:[box-shadow:0_0_0_3px_color-mix(in_srgb,var(--color-brand)_15%,transparent)] ${
+                  rememberMe ? 'bg-brand border-brand' : 'bg-surface-sunken border-hairline'
+                }`}
+              >
+                {rememberMe && (
+                  <svg
+                    viewBox="0 0 10 10"
+                    width="10"
+                    height="10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    className="text-brand-fg"
+                  >
+                    <path d="M1.5 5.2l2.4 2.4 4.6-5.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
               <span>
                 <span className="block text-sm text-ink">Trust this device for 30 days</span>
-                <span className="block text-xs text-ink-muted">Stays logged in on this device.</span>
+                <span className="block text-xs text-ink-subtle">Stays logged in on this device.</span>
               </span>
             </label>
 
@@ -172,14 +257,51 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="hidden lg:flex lg:w-[40%] items-center justify-center border-l border-hairline">
-        <div className="relative w-[160px] h-[160px] flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full bg-brand opacity-10" />
-          <div
-            className="relative w-[80px] h-[80px] rounded-full bg-brand"
-            style={{ animation: 'mycellis-breath-calm 4s ease-in-out infinite' }}
-          />
-        </div>
+      <div className="hidden lg:flex lg:w-[40%] border-l border-hairline overflow-hidden">
+        <svg
+          viewBox="0 0 400 800"
+          preserveAspectRatio="xMidYMid slice"
+          className="w-full h-full"
+          aria-hidden="true"
+        >
+          {CONSTELLATION_LINES.map(([a, b]) => {
+            const dotA = CONSTELLATION_DOTS[a];
+            const dotB = CONSTELLATION_DOTS[b];
+            return (
+              <line
+                key={`${a}-${b}`}
+                x1={dotA.x}
+                y1={dotA.y}
+                x2={dotB.x}
+                y2={dotB.y}
+                stroke="var(--color-ink-subtle)"
+                strokeOpacity={0.1}
+                strokeWidth={1}
+              />
+            );
+          })}
+          {CONSTELLATION_DOTS.map((dot, index) => (
+            <circle
+              key={index}
+              cx={dot.x}
+              cy={dot.y}
+              r={dot.r}
+              fill="var(--color-state-healthy)"
+              style={
+                {
+                  opacity: dot.opacity,
+                  '--dot-base-opacity': dot.opacity,
+                  animation: `constellation-breath ${dot.duration}s ease-in-out infinite`,
+                  animationDelay: `${dot.delay}s`,
+                  // SVG shapes transform around the viewport origin by default,
+                  // not their own center — without this, scale() would make
+                  // each dot visibly drift toward (0,0) instead of pulsing in place.
+                  transformOrigin: `${dot.x}px ${dot.y}px`,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </svg>
       </div>
     </div>
   );
