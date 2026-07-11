@@ -106,8 +106,8 @@ body {
   }
 }
 
-/* Ambient constellation dots (auth pages) — each dot sets --dot-base-opacity
-   inline so they don't all breathe in sync. */
+/* Ambient network-graph nodes (auth pages) — each node sets
+   --dot-base-opacity inline so they don't all breathe in sync. */
 @keyframes constellation-breath {
   0%,
   100% {
@@ -116,6 +116,54 @@ body {
   }
   50% {
     transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+/* Network graph "birth" sequence: nodes fade in first... */
+@keyframes node-fade-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: var(--dot-base-opacity, 0.6);
+  }
+}
+
+/* ...then connecting lines draw in once nodes have appeared. */
+@keyframes line-draw-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A pulse traveling the network: brief surge on the line being crossed... */
+@keyframes pulse-line-surge {
+  0%,
+  100% {
+    opacity: 0;
+    stroke-width: 1;
+  }
+  50% {
+    opacity: 1;
+    stroke-width: 2;
+  }
+}
+
+/* ...followed by a brief brightness flash on the node it arrives at. */
+@keyframes pulse-node-flash {
+  0%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.6);
     opacity: 1;
   }
 }
