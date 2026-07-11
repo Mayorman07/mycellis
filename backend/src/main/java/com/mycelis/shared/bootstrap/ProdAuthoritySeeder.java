@@ -12,6 +12,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Slf4j
@@ -69,16 +70,21 @@ public class ProdAuthoritySeeder {
     }
 
     private void upsertRole(String name, Set<Authority> authorities) {
+        // Set.of(...) returns an immutable SetN — Hibernate mutates this
+        // collection during dirty tracking, so it must be copied into a
+        // mutable collection before being handed off. Same pattern as
+        // InitialDataSeeder.upsertRole.
+        Set<Authority> mutableAuthorities = new HashSet<>(authorities);
         roleRepository.findByName(name)
                 .map(existing -> {
-                    existing.setAuthorities(authorities);
+                    existing.setAuthorities(mutableAuthorities);
                     return roleRepository.save(existing);
                 })
                 .orElseGet(() -> roleRepository.save(
                         Role.builder()
                                 .name(name)
                                 .systemRole(true)
-                                .authorities(authorities)
+                                .authorities(mutableAuthorities)
                                 .build()));
     }
 }
