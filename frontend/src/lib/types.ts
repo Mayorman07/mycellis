@@ -46,19 +46,28 @@ export interface ChangeEmailRequest {
 }
 
 // User signup
+// Mirrors backend com.mycelis.user.constant.Gender exactly — note OTHER, not
+// NON_BINARY (the backend has no dedicated non-binary value).
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+
 export interface CreateUserRequest {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-  mobileNumber?: string;
-  gender?: string;
+  mobileNumber: string;
+  gender: Gender;
+  organizationName: string;
 }
 
 export interface CreateUserResponse {
-  userId: string;
+  id: string;
+  firstName: string;
+  lastName: string;
   email: string;
   status: string;
+  roles: string[];
+  createdAt: string;
 }
 
 // Generic error shape from your GlobalExceptionHandler
