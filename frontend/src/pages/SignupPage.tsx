@@ -88,7 +88,7 @@ export default function SignupPage() {
       : 'Looking good.';
 
   return (
-    <div className="min-h-screen flex bg-surface">
+    <div className="h-screen overflow-y-auto scrollbar-none flex bg-surface">
       <div className="w-full lg:w-[60%] relative flex flex-col px-8 sm:px-16 pt-16 pb-16 bg-[radial-gradient(ellipse_at_center,transparent_0%,color-mix(in_srgb,var(--color-ink)_2%,transparent)_100%)]">
         <div
           aria-hidden="true"
@@ -97,7 +97,7 @@ export default function SignupPage() {
 
         <div className="relative max-w-md w-full mx-auto lg:mx-0">
           <div className="mb-8">
-            <p className="font-mono uppercase tracking-widest text-sm font-medium text-ink">
+            <p className="font-mono uppercase tracking-widest text-sm font-semibold text-ink">
               MYCELLIS
             </p>
             <p className="font-mono tracking-wider text-xs font-normal text-ink-muted mt-0.5">
@@ -105,11 +105,11 @@ export default function SignupPage() {
             </p>
           </div>
 
-          <h1 className="font-display font-normal text-[46px] leading-tight tracking-tight text-ink mb-3">
+          <h1 className="font-display font-normal text-[38px] leading-tight tracking-tight text-ink mb-3">
             Create your monitor.
           </h1>
           <p className="max-w-[440px] text-ink-muted leading-[1.5] mb-8">
-            Start listening to your endpoints in under two minutes.
+            Start listening to your services in under two minutes.
           </p>
 
           {errorMessage && (
@@ -140,7 +140,7 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4">
               <div>
                 <label htmlFor="firstName" className={LABEL_CLASSES}>
                   First name

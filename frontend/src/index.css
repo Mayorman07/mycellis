@@ -179,3 +179,15 @@ input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px var(--color-surface-sunken) inset;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+/* Opt-in per page (auth pages only) — the dashboard keeps visible
+   scrollbars for data-heavy scrolling. Hides the scrollbar's own visual
+   chrome; the element still scrolls via wheel/trackpad/keyboard. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

@@ -66,7 +66,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="h-screen flex bg-surface">
+    <div className="h-screen overflow-y-auto scrollbar-none flex bg-surface">
       <div className="w-full lg:w-[60%] relative flex flex-col justify-center px-8 sm:px-16 py-12 bg-[radial-gradient(ellipse_at_center,transparent_0%,color-mix(in_srgb,var(--color-ink)_2%,transparent)_100%)]">
         <div
           aria-hidden="true"
@@ -75,7 +75,7 @@ export default function LoginPage() {
 
         <div className="relative max-w-md w-full mx-auto lg:mx-0">
           <div className="mb-8">
-            <p className="font-mono uppercase tracking-widest text-sm font-medium text-ink">
+            <p className="font-mono uppercase tracking-widest text-sm font-semibold text-ink">
               MYCELLIS
             </p>
             <p className="font-mono tracking-wider text-xs font-normal text-ink-muted mt-0.5">
