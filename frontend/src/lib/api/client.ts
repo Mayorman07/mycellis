@@ -53,5 +53,9 @@ export async function apiFetch<TResponse>(path: string, options: RequestInit = {
     });
   }
 
-  return (await res.json()) as TResponse;
+  // Some endpoints (e.g. 202 Accepted from forgot-password) return an empty
+  // body on a non-204 success status — res.json() throws on empty input, so
+  // read as text first and only parse if there's actually something there.
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as TResponse;
 }

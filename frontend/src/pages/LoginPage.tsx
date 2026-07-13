@@ -6,7 +6,7 @@ import type { ApiError } from '../lib/api/client';
 import { getTheme, setTheme } from '../lib/theme';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
 
-type LocationState = { from?: string } | null;
+type LocationState = { from?: string; flash?: string } | null;
 
 type LoginErrorMessage = {
   title: string;
@@ -30,6 +30,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Captured once at mount — e.g. ResetPasswordPage navigating here with a
+  // success message. Read once rather than derived from location on every
+  // render, so dismissing it doesn't require also clearing router state.
+  const [flash, setFlash] = useState<string | null>(state?.flash ?? null);
 
   // Auth pages read as a calm, consistent front door regardless of the
   // visitor's dashboard theme preference — locked to cream while mounted,
@@ -89,6 +93,23 @@ export default function LoginPage() {
           <p className="max-w-[440px] text-ink-muted leading-[1.5] mb-8">
             Your systems are waiting. Monitor every endpoint from one place.
           </p>
+
+          {flash && (
+            <div
+              role="status"
+              className="mb-6 flex items-center justify-between gap-3 rounded-md border border-hairline bg-[color-mix(in_srgb,var(--color-state-healthy)_15%,transparent)] px-4 py-3"
+            >
+              <p className="text-sm text-ink">{flash}</p>
+              <button
+                type="button"
+                onClick={() => setFlash(null)}
+                aria-label="Dismiss"
+                className="flex-shrink-0 text-ink-muted hover:text-ink"
+              >
+                <XIcon />
+              </button>
+            </div>
+          )}
 
           {errorMessage && (
             <div
@@ -257,6 +278,14 @@ function deriveErrorMessage(error: ApiError | null, email: string): LoginErrorMe
     title: 'Something went wrong. Please try again.',
     detail: error.title || undefined,
   };
+}
+
+function XIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 function EyeIcon() {
