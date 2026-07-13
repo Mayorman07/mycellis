@@ -5,7 +5,9 @@ import type {
   ForgotPasswordRequest,
   LoginRequest,
   LoginResponse,
+  ResendVerificationRequest,
   ResetPasswordRequest,
+  VerifyEmailRequest,
 } from '../types';
 
 export function login(credentials: LoginRequest): Promise<LoginResponse> {
@@ -31,6 +33,20 @@ export function forgotPassword(request: ForgotPasswordRequest): Promise<void> {
 
 export function resetPassword(request: ResetPasswordRequest): Promise<void> {
   return apiFetch<void>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export function verifyEmail(request: VerifyEmailRequest): Promise<void> {
+  return apiFetch<void>('/auth/verify', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export function resendVerification(request: ResendVerificationRequest): Promise<void> {
+  return apiFetch<void>('/auth/resend-verification', {
     method: 'POST',
     body: JSON.stringify(request),
   });
