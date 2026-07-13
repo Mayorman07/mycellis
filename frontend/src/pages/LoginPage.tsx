@@ -221,7 +221,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="hidden lg:flex lg:w-[40%] overflow-hidden">
+      <div className="hidden lg:flex lg:w-[40%] sticky top-0 h-screen overflow-hidden">
         <AmbientNetwork className="w-full h-full" />
       </div>
     </div>
