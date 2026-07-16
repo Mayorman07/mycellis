@@ -28,12 +28,12 @@ public class UserNotificationListener {
     private final EmailService emailService;
     private final EmailTemplateRenderer templateRenderer;
 
-    @Value("${mycelis.app.base-url}")
-    private String baseUrl;
+    @Value("${mycelis.app.frontend-url}")
+    private String frontendUrl;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onUserCreated(UserCreatedEvent event) {
-        String verifyLink = baseUrl + "/verify.html?token=" + event.verificationToken();
+        String verifyLink = frontendUrl + "/verify?token=" + event.verificationToken();
 
         String html = templateRenderer.render("email/verification-email", Map.of(
                 "firstName", event.firstName(),

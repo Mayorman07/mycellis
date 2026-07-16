@@ -25,12 +25,12 @@ public class PasswordResetNotificationListener {
     private final EmailService emailService;
     private final EmailTemplateRenderer templateRenderer;
 
-    @Value("${mycelis.app.base-url}")
-    private String baseUrl;
+    @Value("${mycelis.app.frontend-url}")
+    private String frontendUrl;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPasswordResetRequested(PasswordResetRequestedEvent event) {
-        String resetLink = baseUrl + "/reset-password.html?token=" + event.resetToken();
+        String resetLink = frontendUrl + "/reset-password?token=" + event.resetToken();
 
         String html = templateRenderer.render("email/password-reset-email", Map.of(
                 "firstName", event.firstName(),
