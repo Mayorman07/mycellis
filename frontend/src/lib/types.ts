@@ -138,6 +138,13 @@ export type Stalk = {
   updatedAt: string;
 };
 
+export type CreateStalkRequest = {
+  nickname: string;
+  url: string;
+  timeoutSeconds: number;
+  growthIntervalSeconds: number;
+};
+
 export type Pulse = {
   id: string;
   stalkId: string;

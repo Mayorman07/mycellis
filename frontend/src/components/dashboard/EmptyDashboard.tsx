@@ -23,9 +23,9 @@ export function EmptyDashboard({ orgName, onCreateStalk }: EmptyDashboardProps) 
       </h1>
 
       <p className="max-w-[500px] text-ink-muted leading-relaxed mb-8">
-        Mycellis listens to a single endpoint and tells you how it's breathing — its health,
-        its latency, the quiet moments and the failures. Plant your first stalk and we'll
-        start listening within seconds.
+        Mycellis watches every endpoint you rely on and reports how each one is breathing —
+        its health, its latency, its vitals, the quiet moments and the failures. Plant your
+        first stalk and we'll start listening within seconds.
       </p>
 
       <div className="flex items-center gap-6">

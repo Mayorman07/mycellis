@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { PageResponse, Stalk } from '../types';
+import type { CreateStalkRequest, PageResponse, Stalk } from '../types';
 
 export function listStalks(params?: { page?: number; size?: number }): Promise<PageResponse<Stalk>> {
   const query = new URLSearchParams();
@@ -12,4 +12,11 @@ export function listStalks(params?: { page?: number; size?: number }): Promise<P
 
 export function getStalk(id: string): Promise<Stalk> {
   return apiFetch<Stalk>(`/stalks/${id}`);
+}
+
+export function createStalk(request: CreateStalkRequest): Promise<Stalk> {
+  return apiFetch<Stalk>('/stalks', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
 }

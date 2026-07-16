@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 type DashboardHeroProps = {
   stalksCount: number;
@@ -12,6 +13,8 @@ function formatSynced(elapsedMs: number): string {
 }
 
 export function DashboardHero({ stalksCount, lastSyncedAt }: DashboardHeroProps) {
+  const navigate = useNavigate();
+
   // Render the parent with key={lastSyncedAt} so a resync remounts this
   // component and resets the ticker, instead of resetting state in an effect.
   const [elapsedMs, setElapsedMs] = useState(() => Date.now() - lastSyncedAt);
@@ -33,8 +36,7 @@ export function DashboardHero({ stalksCount, lastSyncedAt }: DashboardHeroProps)
       </div>
       <button
         type="button"
-        // TODO: route to /stalks/new once the create-stalk flow exists
-        onClick={() => console.log('New stalk clicked')}
+        onClick={() => navigate('/stalks/new')}
         className="rounded-md border border-brand bg-brand px-4 py-2 text-sm font-medium text-brand-fg whitespace-nowrap"
       >
         + New stalk

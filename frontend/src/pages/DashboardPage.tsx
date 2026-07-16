@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSession } from '../lib/hooks/useSession';
 import { useDashboardData } from '../lib/hooks/useDashboardData';
 import { DashboardHeader } from '../components/dashboard/DashboardHeader';
@@ -12,6 +13,7 @@ import { ErrorDashboard } from '../components/dashboard/ErrorDashboard';
 const INITIAL_LOAD_GRACE_MS = 300;
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const session = useSession();
   const { stalksQuery, pulsesQuery } = useDashboardData();
 
@@ -52,7 +54,7 @@ export default function DashboardPage() {
 
     if (stalksQuery.data && stalks.length === 0) {
       return (
-        <EmptyDashboard orgName={orgName} onCreateStalk={() => console.log('Plant your first stalk')} />
+        <EmptyDashboard orgName={orgName} onCreateStalk={() => navigate('/stalks/new')} />
       );
     }
 

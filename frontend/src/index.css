@@ -191,3 +191,75 @@ input:-webkit-autofill:focus {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Custom range slider — scoped to Create Stalk's timeout/interval sliders
+   only, not a global range-input restyle. The filled portion left of the
+   thumb comes from a linear-gradient whose stop is the --range-progress
+   custom property, set inline per-slider from the current value's percent
+   (the one legitimate use of an inline style here — it's a computed value,
+   not a static one). Firefox gets the same fill via ::-moz-range-progress,
+   which it supports natively. */
+.stalk-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--color-brand) var(--range-progress, 0%),
+    var(--color-surface-sunken) var(--range-progress, 0%)
+  );
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-ink) 4%, transparent);
+  accent-color: var(--color-brand);
+  cursor: pointer;
+  outline: none;
+}
+
+.stalk-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.stalk-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 9999px;
+  background: var(--color-brand);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-ink) 25%, transparent);
+  cursor: pointer;
+  transition: box-shadow 150ms ease-in-out;
+}
+
+.stalk-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-surface-sunken);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-ink) 4%, transparent);
+}
+
+.stalk-slider::-moz-range-progress {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-brand);
+}
+
+.stalk-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 9999px;
+  background: var(--color-brand);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-ink) 25%, transparent);
+  cursor: pointer;
+  transition: box-shadow 150ms ease-in-out;
+}
+
+.stalk-slider:focus-visible::-webkit-slider-thumb,
+.stalk-slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-brand) 20%, transparent);
+}
