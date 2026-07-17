@@ -40,13 +40,20 @@ function toPercent(value: number, min: number, max: number): number {
 // Format validation only — no ping, no backend round-trip. Pure function of
 // `url`, so it's computed during render rather than synced into state via an
 // effect (an effect here would just be redundant re-derivation on a delay).
+//
+// new URL() alone is too permissive — "https://google" (no TLD) parses fine,
+// and users who submit that get a stalk whose first pulse fails DNS
+// resolution and sits DEGRADED forever. Also require http(s) and a dotted
+// hostname (or literal "localhost" for local dev targets).
 function isValidUrlFormat(candidate: string): boolean {
   if (!candidate) {
     return false;
   }
   try {
-    new URL(candidate);
-    return true;
+    const parsed = new URL(candidate);
+    const isHttpOrHttps = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    const hasValidHost = parsed.hostname.includes('.') || parsed.hostname === 'localhost';
+    return isHttpOrHttps && hasValidHost;
   } catch {
     return false;
   }
