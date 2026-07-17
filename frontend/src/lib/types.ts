@@ -152,6 +152,7 @@ export type Pulse = {
   latencyState: LatencyState;
   latencyMs: number | null;
   statusCode: number | null;
+  isSuccess: boolean;
   errorMessage: string | null;
   createdAt: string;
 };

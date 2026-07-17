@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { Pulse, Stalk } from '../../lib/types';
 import { StalkRow } from './StalkRow';
 
@@ -10,6 +11,8 @@ const GRID_COLS = 'grid-cols-[2fr_1fr_2fr_0.5fr_0.5fr_0.3fr]';
 const HEADER_LABELS = ['Stalk', 'State', 'Last 40 pulses', 'Latency', 'Uptime'];
 
 export function StalkTable({ stalks, pulsesByStalkId }: StalkTableProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="border border-hairline bg-surface-raised rounded-md overflow-hidden">
       <div className={`grid ${GRID_COLS} gap-4 py-3 px-4 border-b border-hairline`}>
@@ -25,7 +28,7 @@ export function StalkTable({ stalks, pulsesByStalkId }: StalkTableProps) {
           key={stalk.id}
           stalk={stalk}
           pulses={pulsesByStalkId[stalk.id] ?? []}
-          onClick={() => console.log(`Stalk clicked: ${stalk.nickname} - detail page coming in a later commit`)}
+          onClick={() => navigate(`/stalks/${stalk.id}`)}
         />
       ))}
     </div>

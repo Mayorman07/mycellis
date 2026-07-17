@@ -9,6 +9,7 @@ import ResendVerificationPage from './pages/ResendVerificationPage';
 import VerifyPendingPage from './pages/VerifyPendingPage';
 import DashboardPage from './pages/DashboardPage';
 import CreateStalkPage from './pages/CreateStalkPage';
+import StalkDetailPage from './pages/StalkDetailPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/stalks/new" element={<CreateStalkPage />} />
+          <Route path="/stalks/:id" element={<StalkDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

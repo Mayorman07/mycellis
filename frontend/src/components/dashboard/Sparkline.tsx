@@ -5,9 +5,10 @@ type SparklineProps = {
   barWidth?: number;
   gap?: number;
   height?: number;
+  slotCount?: number;
 };
 
-const SLOT_COUNT = 40;
+const DEFAULT_SLOT_COUNT = 40;
 const MIN_BAR_HEIGHT = 4;
 
 const FILL_BY_STATE: Record<Pulse['reliabilityState'], string> = {
@@ -17,8 +18,14 @@ const FILL_BY_STATE: Record<Pulse['reliabilityState'], string> = {
   DORMANT: 'var(--color-state-dormant)',
 };
 
-export function Sparkline({ pulses, barWidth = 3, gap = 1, height = 24 }: SparklineProps) {
-  const width = SLOT_COUNT * barWidth + (SLOT_COUNT - 1) * gap;
+export function Sparkline({
+  pulses,
+  barWidth = 3,
+  gap = 1,
+  height = 24,
+  slotCount = DEFAULT_SLOT_COUNT,
+}: SparklineProps) {
+  const width = slotCount * barWidth + (slotCount - 1) * gap;
 
   // Backend returns newest-first; render oldest-to-newest so the newest pulse lands rightmost.
   const ordered = [...pulses].sort(
@@ -26,8 +33,8 @@ export function Sparkline({ pulses, barWidth = 3, gap = 1, height = 24 }: Sparkl
   );
   const maxLatency = Math.max(1, ...ordered.map((p) => p.latencyMs ?? 0));
 
-  // Fewer than 40 pulses: right-align by padding empty slots on the left.
-  const startSlot = SLOT_COUNT - ordered.length;
+  // Fewer pulses than slots: right-align by padding empty slots on the left.
+  const startSlot = slotCount - ordered.length;
 
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
