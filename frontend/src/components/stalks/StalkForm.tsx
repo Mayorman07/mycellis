@@ -1,10 +1,6 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import type { CreateStalkRequest } from '../../lib/types';
-
-const INPUT_CLASSES =
-  'w-full rounded-md border-[1.5px] border-[color-mix(in_srgb,var(--color-ink)_25%,transparent)] bg-surface-sunken px-4 py-4 text-base tracking-tight text-ink placeholder:text-ink-subtle shadow-[inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent)] transition-all duration-[250ms] ease-in-out focus:outline-none focus:border-brand focus:[box-shadow:inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent),0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]';
-
-const LABEL_CLASSES = 'block font-mono uppercase text-xs tracking-wider text-ink-subtle mb-2';
+import { HINT_CLASSES, INPUT_CLASSES, LABEL_CLASSES } from '../../lib/formClasses';
 
 // Backend's CreateStalkRequest enforces @Min(5)/@Max(120) on timeoutSeconds,
 // but StalkServiceImpl additionally rejects anything above the scheduler's
@@ -133,7 +129,7 @@ export function StalkForm({
             placeholder="Stripe API"
             className={INPUT_CLASSES}
           />
-          <p className="mt-2 text-xs text-ink-subtle">
+          <p className={HINT_CLASSES}>
             A short name you'll recognize in your dashboard.
           </p>
         </div>
@@ -161,7 +157,7 @@ export function StalkForm({
               </span>
             )}
           </div>
-          <p className="mt-2 text-xs text-ink-subtle">The exact endpoint you want us to hit.</p>
+          <p className={HINT_CLASSES}>The exact endpoint you want us to hit.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -198,7 +194,7 @@ export function StalkForm({
                 className="w-20 flex-shrink-0 rounded-md border-[1.5px] border-[color-mix(in_srgb,var(--color-ink)_25%,transparent)] bg-surface-sunken px-2 py-2 text-right text-sm text-ink focus:outline-none focus:border-brand focus:[box-shadow:0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]"
               />
             </div>
-            <p className="mt-2 text-xs text-ink-subtle">
+            <p className={HINT_CLASSES}>
               How long to wait for a response before marking a pulse as failed.
             </p>
           </div>
@@ -236,7 +232,7 @@ export function StalkForm({
                 className="w-20 flex-shrink-0 rounded-md border-[1.5px] border-[color-mix(in_srgb,var(--color-ink)_25%,transparent)] bg-surface-sunken px-2 py-2 text-right text-sm text-ink focus:outline-none focus:border-brand focus:[box-shadow:0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]"
               />
             </div>
-            <p className="mt-2 text-xs text-ink-subtle">How often to send a pulse.</p>
+            <p className={HINT_CLASSES}>How often to send a pulse.</p>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import type { ApiError } from '../lib/api/client';
 import type { Gender } from '../lib/types';
 import { getTheme, setTheme } from '../lib/theme';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
+import { HINT_CLASSES, INPUT_CLASSES, LABEL_CLASSES } from '../lib/formClasses';
 
 type SignupErrorMessage = {
   title: string;
@@ -13,11 +14,6 @@ type SignupErrorMessage = {
   action?: string;
   actionHref?: string;
 };
-
-const INPUT_CLASSES =
-  'w-full rounded-md border-[1.5px] border-[color-mix(in_srgb,var(--color-ink)_25%,transparent)] bg-surface-sunken px-4 py-4 text-base tracking-tight text-ink placeholder:text-ink-subtle shadow-[inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent)] transition-all duration-[250ms] ease-in-out focus:outline-none focus:border-brand focus:[box-shadow:inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent),0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]';
-
-const LABEL_CLASSES = 'block font-mono uppercase text-xs tracking-wider text-ink-subtle mb-2';
 
 // Backend's CreateUserRequest requires @Size(min = 8, max = 64) — not the 6
 // characters originally assumed for the strength hint. Using the real
@@ -249,7 +245,7 @@ export default function SignupPage() {
                 placeholder="Acme Inc."
                 className={INPUT_CLASSES}
               />
-              <p className="mt-2 text-xs text-ink-subtle">This is where your monitoring lives.</p>
+              <p className={HINT_CLASSES}>This is where your monitoring lives.</p>
             </div>
 
             <div className="mb-8">
@@ -278,7 +274,7 @@ export default function SignupPage() {
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
-              <p aria-live="polite" className="mt-2 text-xs text-ink-subtle">
+              <p aria-live="polite" className={HINT_CLASSES}>
                 {passwordHint}
               </p>
             </div>

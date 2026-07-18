@@ -104,6 +104,7 @@ export type User = {
   firstName: string;
   lastName: string;
   roles: string[];
+  createdAt: string;
 };
 
 export type Organization = {
@@ -111,6 +112,7 @@ export type Organization = {
   name: string;
   slug: string;
   planTier: PlanTier;
+  memberCount: number;
 };
 
 export type MeResponse = {

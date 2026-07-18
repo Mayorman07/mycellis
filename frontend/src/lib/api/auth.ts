@@ -1,5 +1,7 @@
 import { apiFetch } from './client';
 import type {
+  ChangeEmailRequest,
+  ChangePasswordRequest,
   CreateUserRequest,
   CreateUserResponse,
   ForgotPasswordRequest,
@@ -49,5 +51,25 @@ export function resendVerification(request: ResendVerificationRequest): Promise<
   return apiFetch<void>('/auth/resend-verification', {
     method: 'POST',
     body: JSON.stringify(request),
+  });
+}
+
+export function changePassword(request: ChangePasswordRequest): Promise<void> {
+  return apiFetch<void>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export function changeEmail(request: ChangeEmailRequest): Promise<void> {
+  return apiFetch<void>('/auth/change-email', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export function logout(): Promise<void> {
+  return apiFetch<void>('/auth/logout', {
+    method: 'POST',
   });
 }

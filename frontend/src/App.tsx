@@ -11,6 +11,9 @@ import DashboardPage from './pages/DashboardPage';
 import CreateStalkPage from './pages/CreateStalkPage';
 import StalkDetailPage from './pages/StalkDetailPage';
 import EditStalkPage from './pages/EditStalkPage';
+import SettingsPage from './pages/SettingsPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
+import ChangeEmailPage from './pages/ChangeEmailPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 
 export default function App() {
@@ -30,6 +33,9 @@ export default function App() {
           <Route path="/stalks/new" element={<CreateStalkPage />} />
           <Route path="/stalks/:id" element={<StalkDetailPage />} />
           <Route path="/stalks/:id/edit" element={<EditStalkPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/change-password" element={<ChangePasswordPage />} />
+          <Route path="/settings/change-email" element={<ChangeEmailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

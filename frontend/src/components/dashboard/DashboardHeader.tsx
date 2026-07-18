@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import type { PlanTier } from '../../lib/types';
 
@@ -10,6 +11,8 @@ type DashboardHeaderProps = {
 const NAV_TABS = ['Overview', 'Status pages', 'Settings'] as const;
 
 export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHeaderProps) {
+  const navigate = useNavigate();
+
   return (
     <header className="border-b border-hairline bg-surface px-6 py-3 flex items-center justify-between gap-6">
       <div className="flex items-center gap-2 cursor-default">
@@ -23,12 +26,13 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
         <ChevronIcon className="text-ink-subtle" />
       </div>
 
-      {/* TODO: wire nav routing when Status pages and Settings pages land */}
+      {/* TODO: wire nav routing when Status pages lands */}
       <nav className="flex items-center gap-1">
         {NAV_TABS.map((tab) => (
           <button
             key={tab}
             type="button"
+            onClick={tab === 'Settings' ? () => navigate('/settings') : undefined}
             className={
               tab === 'Overview'
                 ? 'rounded-md bg-surface-raised px-3 py-1.5 text-sm font-semibold text-ink'

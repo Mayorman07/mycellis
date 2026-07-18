@@ -5,6 +5,7 @@ import { login } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
 import { getTheme, setTheme } from '../lib/theme';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
+import { INPUT_CLASSES, LABEL_CLASSES } from '../lib/formClasses';
 
 type LocationState = { from?: string; flash?: string } | null;
 
@@ -14,9 +15,6 @@ type LoginErrorMessage = {
   action?: string;
   actionHref?: string;
 };
-
-const INPUT_CLASSES =
-  'w-full rounded-md border-[1.5px] border-[color-mix(in_srgb,var(--color-ink)_25%,transparent)] bg-surface-sunken px-4 py-4 text-base tracking-tight text-ink placeholder:text-ink-subtle shadow-[inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent)] transition-all duration-[250ms] ease-in-out focus:outline-none focus:border-brand focus:[box-shadow:inset_0_1px_2px_color-mix(in_srgb,var(--color-ink)_4%,transparent),0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]';
 
 export default function LoginPage() {
   const location = useLocation();
@@ -142,7 +140,7 @@ export default function LoginPage() {
             <div className="mb-4">
               <label
                 htmlFor="email"
-                className="block font-mono uppercase text-xs tracking-wider text-ink-subtle mb-2"
+                className={LABEL_CLASSES}
               >
                 Email
               </label>
@@ -162,7 +160,7 @@ export default function LoginPage() {
             <div className="mb-6">
               <label
                 htmlFor="password"
-                className="block font-mono uppercase text-xs tracking-wider text-ink-subtle mb-2"
+                className={LABEL_CLASSES}
               >
                 Password
               </label>
