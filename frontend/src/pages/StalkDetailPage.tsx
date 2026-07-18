@@ -13,6 +13,12 @@ import { DeleteStalkModal } from '../components/stalks/DeleteStalkModal';
 const PULSE_HISTORY_LIMIT = 200;
 const REFETCH_INTERVAL_MS = 15_000;
 const PULSE_GRID_COLS = 'grid-cols-[90px_120px_40px_80px_80px]';
+const SPARKLINE_BAR_WIDTH = 3;
+const SPARKLINE_GAP = 1;
+// Matches Sparkline's own width formula (slotCount * barWidth + (slotCount - 1) * gap)
+// so the OLDEST/NEWEST label row lines up with the rendered bars' actual edges.
+const SPARKLINE_WIDTH_PX =
+  PULSE_HISTORY_LIMIT * SPARKLINE_BAR_WIDTH + (PULSE_HISTORY_LIMIT - 1) * SPARKLINE_GAP;
 
 function formatRelativeTime(iso: string): string {
   const now = Date.now();
@@ -109,7 +115,15 @@ export default function StalkDetailPage() {
   const pulses = pulsesQuery.data ?? [];
 
   const uptimeLabel = `${stalk.healthIndex.toFixed(1)}%`;
-  const latencyLabel = stalk.averageLatencyMs === null ? '—' : `${stalk.averageLatencyMs}ms`;
+  const cardLatencyLabel = stalk.averageLatencyMs === null ? '—' : `${stalk.averageLatencyMs} ms`;
+
+  const uptimeColorClass =
+    stalk.healthIndex >= 99
+      ? 'text-state-healthy'
+      : stalk.healthIndex >= 95
+        ? 'text-state-stressed'
+        : 'text-state-down';
+  const failuresColorClass = stalk.consecutiveFailures > 0 ? 'text-state-down' : 'text-ink';
 
   return (
     <div className="min-h-screen bg-surface">
@@ -141,22 +155,32 @@ export default function StalkDetailPage() {
         </h1>
         <p className="font-mono text-sm text-ink-muted mb-8">{stalk.url}</p>
 
-        <div className="flex flex-wrap items-center gap-4 mb-10">
-          <div className="flex items-center gap-3">
-            <StatusDot reliabilityState={stalk.reliabilityState} size={24} />
-            <div className="flex items-center gap-1.5">
-              <StatePill variant="reliability" state={stalk.reliabilityState} />
-              <StatePill variant="latency" state={stalk.latencyState} />
-            </div>
-          </div>
-          <div className="font-mono text-sm text-ink-muted flex items-center gap-2">
-            <span>
-              Uptime <span className="text-ink">{uptimeLabel}</span>
-            </span>
-            <span className="text-ink-subtle">·</span>
-            <span>
-              Avg latency <span className="text-ink">{latencyLabel}</span>
-            </span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <MetricCard
+            label="Uptime"
+            value={uptimeLabel}
+            valueColorClass={uptimeColorClass}
+            secondary={`last ${PULSE_HISTORY_LIMIT} pulses`}
+          />
+          <MetricCard
+            label="Avg latency"
+            value={cardLatencyLabel}
+            valueColorClass="text-ink"
+            secondary="median across pulses"
+          />
+          <MetricCard
+            label="Failures"
+            value={String(stalk.consecutiveFailures)}
+            valueColorClass={failuresColorClass}
+            secondary="consecutive"
+          />
+        </div>
+
+        <div className="flex items-center gap-3 mb-10">
+          <StatusDot reliabilityState={stalk.reliabilityState} size={24} />
+          <div className="flex items-center gap-1.5">
+            <StatePill variant="reliability" state={stalk.reliabilityState} />
+            <StatePill variant="latency" state={stalk.latencyState} />
           </div>
         </div>
 
@@ -164,37 +188,32 @@ export default function StalkDetailPage() {
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
             Last {PULSE_HISTORY_LIMIT} pulses
           </p>
-          <Sparkline pulses={pulses} slotCount={PULSE_HISTORY_LIMIT} barWidth={3} gap={1} height={110} />
+          <div style={{ maxWidth: SPARKLINE_WIDTH_PX }}>
+            <Sparkline
+              pulses={pulses}
+              slotCount={PULSE_HISTORY_LIMIT}
+              barWidth={SPARKLINE_BAR_WIDTH}
+              gap={SPARKLINE_GAP}
+              height={110}
+            />
+            <div className="flex justify-between mt-2">
+              <span className="font-mono text-[10px] tracking-wider text-ink-subtle">OLDEST</span>
+              <span className="font-mono text-[10px] tracking-wider text-ink-subtle">NEWEST</span>
+            </div>
+          </div>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-          <div>
-            <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
-              Config
-            </p>
+        <section className="mb-10">
+          <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
+            Config
+          </p>
+          <div className="rounded-lg border border-hairline bg-surface-raised py-6 px-6">
             <InfoRow label="URL" value={stalk.url} />
             <InfoRow label="Timeout" value={`${stalk.timeoutSeconds} seconds`} />
             <InfoRow label="Check every" value={`${stalk.growthIntervalSeconds} seconds`} />
             <InfoRow label="Created" value={formatRelativeTime(stalk.createdAt)} />
           </div>
-
-          <div>
-            <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
-              Metrics
-            </p>
-            <InfoRow label="Avg latency" value={latencyLabel} />
-            <InfoRow label="Uptime" value={uptimeLabel} />
-            <InfoRow label="Consecutive failures" value={String(stalk.consecutiveFailures)} />
-            <InfoRow
-              label="State"
-              value={
-                stalk.latencyState === 'NORMAL'
-                  ? stalk.reliabilityState
-                  : `${stalk.reliabilityState} · ${stalk.latencyState}`
-              }
-            />
-          </div>
-        </div>
+        </section>
 
         <section>
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
@@ -230,6 +249,30 @@ export default function StalkDetailPage() {
         onConfirm={() => deleteMutation.mutate()}
         isDeleting={deleteMutation.isPending}
       />
+    </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  valueColorClass,
+  secondary,
+}: {
+  label: string;
+  value: string;
+  valueColorClass: string;
+  secondary: string;
+}) {
+  return (
+    <div className="rounded-lg border border-hairline bg-surface-raised py-6 px-6">
+      <p className="font-mono uppercase text-[11px] tracking-widest text-ink-subtle mb-2">
+        {label}
+      </p>
+      <p className={`font-display font-normal text-[36px] leading-none ${valueColorClass}`}>
+        {value}
+      </p>
+      <p className="font-mono text-[11px] text-ink-muted mt-2">{secondary}</p>
     </div>
   );
 }

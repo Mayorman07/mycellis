@@ -240,27 +240,26 @@ export function StalkForm({
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          aria-busy={isSubmitting}
-          className={`w-full rounded-md bg-brand px-4 py-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60 ${
-            isSubmitting ? 'cursor-default' : 'cursor-pointer'
-          }`}
-        >
-          {isSubmitting ? submittingLabel : submitLabel}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-md border border-hairline-strong bg-surface-raised px-6 py-4 text-sm font-medium text-ink hover:bg-surface-sunken"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+            className={`flex-1 rounded-md bg-brand px-4 py-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60 ${
+              isSubmitting ? 'cursor-default' : 'cursor-pointer'
+            }`}
+          >
+            {isSubmitting ? submittingLabel : submitLabel}
+          </button>
+        </div>
       </form>
-
-      <div className="mt-6">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-sm text-ink-muted hover:text-ink"
-        >
-          {cancelLabel}
-        </button>
-      </div>
     </>
   );
 }
