@@ -67,6 +67,7 @@ public class UserServiceImpl implements UserService {
         dto.setEncryptedPassword(passwordEncoder.encode(request.password()));
         dto.setPassword(null);
         dto.setStatus(Status.NEW);
+        dto.setCreatedAt(Instant.now());
 
         User user = userMapper.toEntity(dto);
         user.getRoles().add(ownerRole);
@@ -87,7 +88,7 @@ public class UserServiceImpl implements UserService {
 
         // Deprecated compat column — kept in sync in parallel with the membership
         // row below until V12 drops it. Explicit save rather than relying on
-        // dirty-checking, so the write is unambiguous.
+        // dirty-checking, so write is unambiguous.
         savedUser.setOrganizationId(org.getId());
         userRepository.save(savedUser);
 
