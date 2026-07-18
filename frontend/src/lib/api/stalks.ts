@@ -20,3 +20,16 @@ export function createStalk(request: CreateStalkRequest): Promise<Stalk> {
     body: JSON.stringify(request),
   });
 }
+
+export function updateStalk(id: string, request: CreateStalkRequest): Promise<Stalk> {
+  return apiFetch<Stalk>(`/stalks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(request),
+  });
+}
+
+export function deleteStalk(id: string): Promise<void> {
+  return apiFetch<void>(`/stalks/${id}`, {
+    method: 'DELETE',
+  });
+}

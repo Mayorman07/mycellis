@@ -1,12 +1,14 @@
-import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getStalk } from '../lib/api/stalks';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { deleteStalk, getStalk } from '../lib/api/stalks';
 import { getRecentPulses } from '../lib/api/pulses';
 import type { ApiError } from '../lib/api/client';
 import type { Pulse } from '../lib/types';
 import { StatusDot } from '../components/dashboard/StatusDot';
 import { StatePill } from '../components/dashboard/StatePill';
 import { Sparkline } from '../components/dashboard/Sparkline';
+import { DeleteStalkModal } from '../components/stalks/DeleteStalkModal';
 
 const PULSE_HISTORY_LIMIT = 200;
 const REFETCH_INTERVAL_MS = 15_000;
@@ -25,12 +27,24 @@ function formatRelativeTime(iso: string): string {
 
 export default function StalkDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const stalkQuery = useQuery<Awaited<ReturnType<typeof getStalk>>, ApiError>({
     queryKey: ['stalk', id],
     queryFn: () => getStalk(id!),
     enabled: !!id,
     refetchInterval: REFETCH_INTERVAL_MS,
+  });
+
+  const deleteMutation = useMutation<void, ApiError, void>({
+    mutationFn: () => deleteStalk(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stalks'] });
+      queryClient.removeQueries({ queryKey: ['stalk', id] });
+      navigate('/dashboard');
+    },
   });
 
   const pulsesQuery = useQuery<Pulse[], ApiError>({
@@ -105,18 +119,16 @@ export default function StalkDetailPage() {
             MYCELLIS · STALK
           </p>
           <div className="flex items-center gap-3">
-            {/* TODO: Wire in Commit 15 */}
             <button
               type="button"
-              onClick={() => console.log('Edit clicked')}
+              onClick={() => navigate(`/stalks/${id}/edit`)}
               className="rounded-md border border-hairline bg-surface-raised px-4 py-2 text-sm font-medium text-ink"
             >
               Edit
             </button>
-            {/* TODO: Wire in Commit 15 */}
             <button
               type="button"
-              onClick={() => console.log('Delete clicked')}
+              onClick={() => setShowDeleteModal(true)}
               className="rounded-md border border-hairline bg-surface-raised px-4 py-2 text-sm font-medium text-ink hover:text-state-down"
             >
               Delete
@@ -210,6 +222,14 @@ export default function StalkDetailPage() {
           </div>
         </section>
       </main>
+
+      <DeleteStalkModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        stalkNickname={stalk.nickname}
+        onConfirm={() => deleteMutation.mutate()}
+        isDeleting={deleteMutation.isPending}
+      />
     </div>
   );
 }
