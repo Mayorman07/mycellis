@@ -57,6 +57,16 @@ export default function ChangeEmailPage() {
                 verification link to the new address.
               </p>
 
+              <div className="mb-6 p-4 bg-surface-raised border-l-4 border-state-stressed rounded-md">
+                <p className="text-sm text-ink font-medium mb-1">
+                  Email changes temporarily disabled
+                </p>
+                <p className="text-xs text-ink-muted">
+                  We're finishing this feature. For now, please contact support if you need to
+                  change your email address.
+                </p>
+              </div>
+
               {errorMessage && (
                 <div
                   role="alert"
@@ -78,12 +88,13 @@ export default function ChangeEmailPage() {
                     id="newEmail"
                     type="email"
                     required
+                    disabled
                     autoComplete="email"
                     inputMode="email"
                     value={newEmail}
                     onChange={(event) => setNewEmail(event.target.value)}
                     placeholder="you@company.com"
-                    className={INPUT_CLASSES}
+                    className={`${INPUT_CLASSES} opacity-60`}
                   />
                 </div>
 
@@ -96,11 +107,12 @@ export default function ChangeEmailPage() {
                       id="currentPassword"
                       type={showPassword ? 'text' : 'password'}
                       required
+                      disabled
                       autoComplete="current-password"
                       value={currentPassword}
                       onChange={(event) => setCurrentPassword(event.target.value)}
                       placeholder="••••••••"
-                      className={`${INPUT_CLASSES} pr-12`}
+                      className={`${INPUT_CLASSES} pr-12 opacity-60`}
                     />
                     <button
                       type="button"
@@ -124,13 +136,10 @@ export default function ChangeEmailPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={changeMutation.isPending}
-                    aria-busy={changeMutation.isPending}
-                    className={`flex-1 rounded-md bg-brand px-4 py-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60 ${
-                      changeMutation.isPending ? 'cursor-default' : 'cursor-pointer'
-                    }`}
+                    disabled
+                    className="flex-1 rounded-md bg-brand px-4 py-4 text-sm font-medium text-brand-fg opacity-50 cursor-not-allowed"
                   >
-                    {changeMutation.isPending ? 'Updating…' : 'Update email'}
+                    Coming soon
                   </button>
                 </div>
               </form>
