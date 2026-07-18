@@ -1,5 +1,6 @@
 package com.mycelis.user.model.response;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,13 +20,15 @@ public record MeResponse(
             String email,
             String firstName,
             String lastName,
-            List<String> roles
+            List<String> roles,
+            Instant createdAt
     ) {}
 
     public record OrganizationInfo(
             UUID id,
             String name,
             String slug,
-            String planTier
+            String planTier,
+            long memberCount
     ) {}
 }

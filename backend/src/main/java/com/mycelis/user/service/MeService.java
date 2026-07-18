@@ -1,5 +1,6 @@
 package com.mycelis.user.service;
 
+import com.mycelis.membership.repository.MembershipRepository;
 import com.mycelis.organization.entity.Organization;
 import com.mycelis.organization.repository.OrganizationRepository;
 import com.mycelis.shared.exception.ResourceNotFoundException;
@@ -25,6 +26,7 @@ public class MeService {
 
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
+    private final MembershipRepository membershipRepository;
 
     @Transactional(readOnly = true)
     public MeResponse getMe(UUID userId) {
@@ -39,19 +41,23 @@ public class MeService {
                 .map(Role::getName)
                 .toList();
 
+        long memberCount = membershipRepository.countByOrganizationId(org.getId());
+
         return new MeResponse(
                 new MeResponse.UserInfo(
                         user.getId(),
                         user.getEmail(),
                         user.getFirstName(),
                         user.getLastName(),
-                        roleNames
+                        roleNames,
+                        user.getCreatedAt()
                 ),
                 new MeResponse.OrganizationInfo(
                         org.getId(),
                         org.getName(),
                         org.getSlug(),
-                        org.getPlanTier().name()
+                        org.getPlanTier().name(),
+                        memberCount
                 )
         );
     }
