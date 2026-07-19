@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
+import { useSession } from '../../lib/hooks/useSession';
 import type { PlanTier } from '../../lib/types';
 
 type DashboardHeaderProps = {
@@ -12,6 +13,13 @@ const NAV_TABS = ['Overview', 'Status pages', 'Settings'] as const;
 
 export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHeaderProps) {
   const navigate = useNavigate();
+  const session = useSession();
+  // "See what customers see" — opens in a new tab rather than navigating the
+  // dashboard away. undefined href until the session resolves; an <a> with
+  // no href isn't clickable, which is the safe fallback for that window.
+  const statusPagesHref = session.data
+    ? `/status/${session.data.organization.slug}`
+    : undefined;
 
   return (
     <header className="border-b border-hairline bg-surface px-6 py-3 flex items-center justify-between gap-6">
@@ -26,22 +34,44 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
         <ChevronIcon className="text-ink-subtle" />
       </div>
 
-      {/* TODO: wire nav routing when Status pages lands */}
       <nav className="flex items-center gap-1">
-        {NAV_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={tab === 'Settings' ? () => navigate('/settings') : undefined}
-            className={
-              tab === 'Overview'
-                ? 'rounded-md bg-surface-raised px-3 py-1.5 text-sm font-semibold text-ink'
-                : 'rounded-md px-3 py-1.5 text-sm text-ink-subtle'
-            }
-          >
-            {tab}
-          </button>
-        ))}
+        {NAV_TABS.map((tab) => {
+          const className =
+            tab === 'Overview'
+              ? 'rounded-md bg-surface-raised px-3 py-1.5 text-sm font-semibold text-ink'
+              : 'rounded-md px-3 py-1.5 text-sm text-ink-subtle';
+
+          if (tab === 'Status pages') {
+            return (
+              <a
+                key={tab}
+                href={statusPagesHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-disabled={!statusPagesHref}
+                onClick={(event) => {
+                  if (!statusPagesHref) {
+                    event.preventDefault();
+                  }
+                }}
+                className={className}
+              >
+                {tab}
+              </a>
+            );
+          }
+
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={tab === 'Settings' ? () => navigate('/settings') : undefined}
+              className={className}
+            >
+              {tab}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="flex items-center gap-3">
