@@ -77,6 +77,9 @@ public class SecurityConfig {
                                 "/api/users/create"
                         ).permitAll()
 
+                        // Public status pages — no login required, visited by anyone with the link
+                        .requestMatchers("/api/status/**").permitAll()
+
                         // Public static pages (frontend lives at root)
                         .requestMatchers(
                                 "/",

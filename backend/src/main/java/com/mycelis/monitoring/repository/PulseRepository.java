@@ -94,4 +94,28 @@ public interface PulseRepository extends JpaRepository<Pulse, UUID> {
         ORDER BY ranked.stalk_id, ranked.created_at DESC
         """, nativeQuery = true)
     List<Pulse> findRecentByStalkIds(@Param("stalkIds") Set<UUID> stalkIds, @Param("limit") int limit);
+
+    /**
+     * Daily pulse totals + successes for the public status page's uptime
+     * history. Aggregated in SQL (one query per stalk) rather than fetching
+     * every pulse row to Java — a stalk on a 60s interval can log thousands
+     * of pulses across a 90-day window.
+     *
+     * <p>Only returns rows for days that had at least one pulse; days with
+     * zero pulses are simply absent — the caller fills those in as "no
+     * data" rather than assuming 0%.</p>
+     */
+    @Query(value = """
+        SELECT
+            DATE(created_at) AS day,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE is_success = true) AS successful
+        FROM pulses
+        WHERE stalk_id = :stalkId
+          AND created_at >= :windowStart
+        GROUP BY DATE(created_at)
+        ORDER BY DATE(created_at)
+        """, nativeQuery = true)
+    List<Object[]> findDailyUptimeAggregates(@Param("stalkId") UUID stalkId,
+                                              @Param("windowStart") Instant windowStart);
 }
