@@ -159,6 +159,27 @@ export type Pulse = {
   createdAt: string;
 };
 
+// Public status page (no auth) — deliberately excludes anything the backend
+// itself doesn't expose publicly: stalk URLs, stalk/org ids, plan tier,
+// member count. See com.mycelis.status.dto.PublicStatusResponse.
+export type OverallState = 'HEALTHY' | 'STRESSED' | 'DEGRADED' | 'IMPAIRED';
+
+export type PublicStalkStatus = {
+  nickname: string;
+  reliabilityState: ReliabilityState;
+  latencyState: LatencyState;
+  healthIndex: number;
+  averageLatencyMs: number;
+  uptimeHistory90d: (number | null)[];
+};
+
+export type PublicStatusResponse = {
+  organization: { name: string; slug: string };
+  overallState: OverallState;
+  stalks: PublicStalkStatus[];
+  lastUpdated: string;
+};
+
 export type UptimeResponse = {
   uptimePercent: number;
   windowStart: string;

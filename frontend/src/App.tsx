@@ -14,6 +14,7 @@ import EditStalkPage from './pages/EditStalkPage';
 import SettingsPage from './pages/SettingsPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import ChangeEmailPage from './pages/ChangeEmailPage';
+import PublicStatusPage from './pages/PublicStatusPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/resend-verification" element={<ResendVerificationPage />} />
         <Route path="/verify-pending" element={<VerifyPendingPage />} />
+        <Route path="/status/:slug" element={<PublicStatusPage />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/stalks/new" element={<CreateStalkPage />} />
