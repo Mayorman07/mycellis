@@ -15,7 +15,11 @@ import SettingsPage from './pages/SettingsPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import ChangeEmailPage from './pages/ChangeEmailPage';
 import PublicStatusPage from './pages/PublicStatusPage';
+import SuperAdminOrganizationsPage from './pages/SuperAdminOrganizationsPage';
+import SuperAdminUsersPage from './pages/SuperAdminUsersPage';
+import SuperAdminOrgStalksPage from './pages/SuperAdminOrgStalksPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
+import { SuperAdminRoute } from './components/superadmin/SuperAdminRoute';
 
 export default function App() {
   return (
@@ -38,6 +42,30 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/change-password" element={<ChangePasswordPage />} />
           <Route path="/settings/change-email" element={<ChangeEmailPage />} />
+          <Route
+            path="/super-admin/organizations"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminOrganizationsPage />
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super-admin/users"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminUsersPage />
+              </SuperAdminRoute>
+            }
+          />
+          <Route
+            path="/super-admin/organizations/:orgId/stalks"
+            element={
+              <SuperAdminRoute>
+                <SuperAdminOrgStalksPage />
+              </SuperAdminRoute>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>

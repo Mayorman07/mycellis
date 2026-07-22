@@ -180,6 +180,47 @@ export type PublicStatusResponse = {
   lastUpdated: string;
 };
 
+// Super admin (read-only, cross-tenant) — see com.mycelis.superadmin.dto.
+export type SuperAdminOrgSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  planTier: string;
+  memberCount: number;
+  stalkCount: number;
+  createdAt: string;
+};
+
+export type SuperAdminUserSummary = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  organizationName: string | null;
+  roles: string[];
+  status: string;
+  createdAt: string;
+};
+
+export type SuperAdminOrgMember = {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  isPrimary: boolean;
+};
+
+export type SuperAdminOrgDetail = {
+  id: string;
+  name: string;
+  slug: string;
+  planTier: string;
+  memberCount: number;
+  stalkCount: number;
+  createdAt: string;
+  members: SuperAdminOrgMember[];
+};
+
 export type UptimeResponse = {
   uptimePercent: number;
   windowStart: string;

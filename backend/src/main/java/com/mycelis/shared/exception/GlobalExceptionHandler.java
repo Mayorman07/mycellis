@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
@@ -100,6 +101,29 @@ public class GlobalExceptionHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         pd.setTitle("Resource Conflict");
         pd.setType(URI.create(BASE_URI + "resource-conflict"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    /**
+     * Handles method-security denials (@PreAuthorize) — a DIFFERENT code path
+     * from authorizeHttpRequests' filter-chain denials, which SecurityConfig
+     * already routes through RestAccessDeniedHandler. AccessDeniedException
+     * thrown by a @PreAuthorize method interceptor surfaces here instead,
+     * inside normal Spring MVC exception resolution — without this handler
+     * it fell through to the generic 500 handler below (discovered via the
+     * first @PreAuthorize check on a boolean flag rather than a role, but it
+     * affected every existing hasRole(...)/hasAuthority(...) check too, e.g.
+     * UsersController's ADMIN-gated endpoints).
+     * Same response shape as RestAccessDeniedHandler for consistency.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "You do not have permission to access this resource");
+        pd.setTitle("Access Denied");
+        pd.setType(URI.create(BASE_URI + "access-denied"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }

@@ -18,4 +18,10 @@ public interface MembershipRepository extends JpaRepository<Membership, UUID> {
     boolean existsByUserIdAndOrganizationId(UUID userId, UUID organizationId);
 
     long countByOrganizationId(UUID organizationId);
+
+    /** Members of one org — super-admin org detail view. */
+    List<Membership> findAllByOrganizationId(UUID organizationId);
+
+    /** Every user's primary membership — bulk join source for the super-admin user list. */
+    List<Membership> findAllByIsPrimaryTrue();
 }

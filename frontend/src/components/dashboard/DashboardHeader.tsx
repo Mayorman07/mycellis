@@ -20,6 +20,7 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
   const statusPagesHref = session.data
     ? `/status/${session.data.organization.slug}`
     : undefined;
+  const isSuperAdmin = session.data?.user.roles.includes('SUPER_ADMIN') ?? false;
 
   return (
     <header className="border-b border-hairline bg-surface px-6 py-3 flex items-center justify-between gap-6">
@@ -72,6 +73,15 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
             </button>
           );
         })}
+        {isSuperAdmin && (
+          <button
+            type="button"
+            onClick={() => navigate('/super-admin/organizations')}
+            className="rounded-md px-3 py-1.5 text-sm text-ink-subtle"
+          >
+            Super admin
+          </button>
+        )}
       </nav>
 
       <div className="flex items-center gap-3">

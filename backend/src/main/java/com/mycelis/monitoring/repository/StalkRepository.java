@@ -48,8 +48,17 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
 
     /**
      * Organization-scoped pagination for the dashboard.
+     *
+     * <p>Not tenant-scoped by itself — the caller supplies organizationId directly.
+     * Regular controllers derive it from the authenticated principal; the
+     * super-admin cross-tenant viewer passes an arbitrary org id instead,
+     * which is safe there only because that endpoint is already gated by
+     * super-admin authorization.</p>
      */
     Page<Stalk> findByOrganizationId(UUID organizationId, Pageable pageable);
+
+    /** Stalk count for the super-admin org list/detail views. */
+    long countByOrganizationId(UUID organizationId);
 
     /**
      * Reschedules next execution time after a completed check.

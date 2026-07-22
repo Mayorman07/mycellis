@@ -61,4 +61,15 @@ public interface UserRepository extends JpaRepository<User, UUID> {
        WHERE u.id = :id
        """)
     Optional<User> findByIdWithRolesAndAuthorities(@Param("id") UUID id);
+
+    /**
+     * All users with roles eagerly fetched in one query — for the
+     * super-admin user list, so rendering roles per row doesn't lazy-load
+     * once per user (N+1).
+     */
+    @Query("""
+           SELECT DISTINCT u FROM User u
+           LEFT JOIN FETCH u.roles r
+           """)
+    List<User> findAllWithRoles();
 }
