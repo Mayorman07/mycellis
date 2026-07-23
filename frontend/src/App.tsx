@@ -20,6 +20,7 @@ import SuperAdminUsersPage from './pages/SuperAdminUsersPage';
 import SuperAdminOrgStalksPage from './pages/SuperAdminOrgStalksPage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { SuperAdminRoute } from './components/superadmin/SuperAdminRoute';
+import AuthenticatedLayout from './components/layout/AuthenticatedLayout';
 
 export default function App() {
   return (
@@ -35,37 +36,39 @@ export default function App() {
         <Route path="/verify-pending" element={<VerifyPendingPage />} />
         <Route path="/status/:slug" element={<PublicStatusPage />} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/stalks/new" element={<CreateStalkPage />} />
-          <Route path="/stalks/:id" element={<StalkDetailPage />} />
-          <Route path="/stalks/:id/edit" element={<EditStalkPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/settings/change-password" element={<ChangePasswordPage />} />
-          <Route path="/settings/change-email" element={<ChangeEmailPage />} />
-          <Route
-            path="/super-admin/organizations"
-            element={
-              <SuperAdminRoute>
-                <SuperAdminOrganizationsPage />
-              </SuperAdminRoute>
-            }
-          />
-          <Route
-            path="/super-admin/users"
-            element={
-              <SuperAdminRoute>
-                <SuperAdminUsersPage />
-              </SuperAdminRoute>
-            }
-          />
-          <Route
-            path="/super-admin/organizations/:orgId/stalks"
-            element={
-              <SuperAdminRoute>
-                <SuperAdminOrgStalksPage />
-              </SuperAdminRoute>
-            }
-          />
+          <Route element={<AuthenticatedLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/stalks/new" element={<CreateStalkPage />} />
+            <Route path="/stalks/:id" element={<StalkDetailPage />} />
+            <Route path="/stalks/:id/edit" element={<EditStalkPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/change-password" element={<ChangePasswordPage />} />
+            <Route path="/settings/change-email" element={<ChangeEmailPage />} />
+            <Route
+              path="/super-admin/organizations"
+              element={
+                <SuperAdminRoute>
+                  <SuperAdminOrganizationsPage />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/super-admin/users"
+              element={
+                <SuperAdminRoute>
+                  <SuperAdminUsersPage />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="/super-admin/organizations/:orgId/stalks"
+              element={
+                <SuperAdminRoute>
+                  <SuperAdminOrgStalksPage />
+                </SuperAdminRoute>
+              }
+            />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { useSession } from '../../lib/hooks/useSession';
 import type { PlanTier } from '../../lib/types';
@@ -24,7 +24,7 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
 
   return (
     <header className="border-b border-hairline bg-surface px-6 py-3 flex items-center justify-between gap-6">
-      <div className="flex items-center gap-2 cursor-default">
+      <Link to="/dashboard" className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-md bg-brand text-brand-fg flex items-center justify-center font-display text-sm">
           {orgName.charAt(0).toUpperCase()}
         </div>
@@ -33,7 +33,7 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
           {planTier}
         </span>
         <ChevronIcon className="text-ink-subtle" />
-      </div>
+      </Link>
 
       <nav className="flex items-center gap-1">
         {NAV_TABS.map((tab) => {
