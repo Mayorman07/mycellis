@@ -24,11 +24,16 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
 
   return (
     <header className="border-b border-hairline bg-surface px-6 py-3 flex items-center justify-between gap-6">
-      <Link to="/dashboard" className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-md bg-brand text-brand-fg flex items-center justify-center font-display text-sm">
+      <Link
+        to="/dashboard"
+        className="group flex items-center gap-2 -mx-2 -my-1 rounded-md px-2 py-1 transition-colors duration-200 ease-out hover:bg-[color-mix(in_srgb,var(--color-surface-raised)_60%,transparent)] focus-visible:outline-none focus-visible:[box-shadow:0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]"
+      >
+        <div className="w-8 h-8 rounded-md bg-brand text-brand-fg flex items-center justify-center font-display text-sm transition-transform duration-200 ease-out group-hover:scale-[1.02]">
           {orgName.charAt(0).toUpperCase()}
         </div>
-        <span className="font-display text-ink">{orgName}</span>
+        <span className="font-display text-ink transition-colors duration-200 ease-out group-hover:underline group-hover:decoration-brand group-hover:decoration-1 group-hover:underline-offset-4">
+          {orgName}
+        </span>
         <span className="font-mono uppercase text-[10px] tracking-wider text-ink-muted bg-accent rounded-full px-2 py-0.5">
           {planTier}
         </span>
