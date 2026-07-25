@@ -130,6 +130,15 @@ public class User implements Serializable {
     @Column(name = "verification_email_count_window_start")
     private Instant verificationEmailCountWindowStart;
 
+    /** Optional override recipient for stalk alerts. Falls back to {@link #email} when null. */
+    @Column(name = "alert_email", length = 255)
+    private String alertEmail;
+
+    /** If false, AlertEngine still tracks state transitions but skips sending email. */
+    @Column(name = "alerts_enabled", nullable = false)
+    @Builder.Default
+    private boolean alertsEnabled = true;
+
     /**
      * Grants system-wide authorities (USER_READ, ORG_MANAGE, etc.) via
      * {@link Role#getAuthorities()} — this responsibility is NOT deprecated

@@ -6,6 +6,7 @@ import com.mycelis.organization.repository.OrganizationRepository;
 import com.mycelis.shared.exception.ResourceNotFoundException;
 import com.mycelis.user.entity.Role;
 import com.mycelis.user.entity.User;
+import com.mycelis.user.model.request.UpdateAlertPreferencesRequest;
 import com.mycelis.user.model.response.MeResponse;
 import com.mycelis.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,9 @@ public class MeService {
                         user.getFirstName(),
                         user.getLastName(),
                         roleNames,
-                        user.getCreatedAt()
+                        user.getCreatedAt(),
+                        user.getAlertEmail(),
+                        user.isAlertsEnabled()
                 ),
                 new MeResponse.OrganizationInfo(
                         org.getId(),
@@ -60,5 +63,17 @@ public class MeService {
                         memberCount
                 )
         );
+    }
+
+    @Transactional
+    public MeResponse updateAlertPreferences(UUID userId, UpdateAlertPreferencesRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId.toString()));
+
+        String alertEmail = request.alertEmail();
+        user.setAlertEmail(alertEmail != null && !alertEmail.isBlank() ? alertEmail.trim() : null);
+        user.setAlertsEnabled(request.alertsEnabled());
+
+        return getMe(userId);
     }
 }

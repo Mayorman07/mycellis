@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../lib/hooks/useSession';
 import { logout } from '../lib/api/auth';
+import { updateAlertPreferences } from '../lib/api/me';
 import type { ApiError } from '../lib/api/client';
-import type { PlanTier } from '../lib/types';
+import type { MeResponse, PlanTier, User } from '../lib/types';
 
 type LocationState = { flash?: string } | null;
 
@@ -149,6 +150,8 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        <AlertsSection user={user} />
+
         <section>
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
             Actions
@@ -219,6 +222,89 @@ function ChevronRightIcon() {
     >
       <path d="M6 3.5 10.5 8 6 12.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// Mounted only once `user` is real, loaded data (parent guards on session
+// loading/error before rendering this) — so local state can initialize
+// directly from props on first render, no hydration effect needed.
+function AlertsSection({ user }: { user: User }) {
+  const queryClient = useQueryClient();
+  const [alertEmailInput, setAlertEmailInput] = useState(user.alertEmail ?? user.email);
+  const [alertsEnabled, setAlertsEnabled] = useState(user.alertsEnabled);
+
+  const alertPrefsMutation = useMutation<MeResponse, ApiError, { alertEmail: string; alertsEnabled: boolean }>({
+    mutationFn: ({ alertEmail, alertsEnabled: enabled }) =>
+      updateAlertPreferences({
+        alertEmail: alertEmail.trim() === '' ? null : alertEmail.trim(),
+        alertsEnabled: enabled,
+      }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['me'], data);
+      setAlertEmailInput(data.user.alertEmail ?? data.user.email);
+      setAlertsEnabled(data.user.alertsEnabled);
+    },
+  });
+
+  return (
+    <section className="mb-8">
+      <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">Alerts</p>
+      <div className="rounded-lg border border-hairline bg-surface-raised py-2 px-6">
+        <div className="flex items-center justify-between py-4 border-b border-hairline">
+          <span className="font-mono uppercase text-xs tracking-wider text-ink-subtle flex-shrink-0">
+            Alert email
+          </span>
+          <input
+            type="email"
+            value={alertEmailInput}
+            onChange={(event) => setAlertEmailInput(event.target.value)}
+            onBlur={() => {
+              const currentlySaved = user.alertEmail ?? user.email;
+              if (alertEmailInput.trim() !== currentlySaved) {
+                alertPrefsMutation.mutate({ alertEmail: alertEmailInput, alertsEnabled });
+              }
+            }}
+            placeholder={user.email}
+            className="text-sm text-ink text-right ml-4 bg-transparent focus:outline-none placeholder:text-ink-subtle"
+          />
+        </div>
+        <div className="flex items-center justify-between py-4">
+          <span className="text-sm text-ink">Send me alerts when my stalks go down</span>
+          <ToggleSwitch
+            checked={alertsEnabled}
+            onChange={(next) => {
+              setAlertsEnabled(next);
+              alertPrefsMutation.mutate({ alertEmail: alertEmailInput, alertsEnabled: next });
+            }}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (next: boolean) => void }) {
+  return (
+    <label className="inline-flex items-center cursor-pointer flex-shrink-0">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
+      />
+      <span
+        aria-hidden="true"
+        className={`relative w-10 h-6 rounded-full transition-colors duration-150 ease-in-out peer-focus-visible:[box-shadow:0_0_0_3px_color-mix(in_srgb,var(--color-brand)_15%,transparent)] ${
+          checked ? 'bg-brand' : 'bg-surface-sunken border border-hairline'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-surface shadow transition-transform duration-150 ease-in-out ${
+            checked ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </span>
+    </label>
   );
 }
 

@@ -98,4 +98,7 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
      * than surfaced as an error.</p>
      */
     List<Stalk> findByIdInAndOrganizationId(Set<UUID> ids, UUID organizationId);
+
+    /** Active stalks to evaluate for alertable state transitions. */
+    List<Stalk> findByIsActiveTrue();
 }

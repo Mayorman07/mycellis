@@ -21,7 +21,9 @@ public record MeResponse(
             String firstName,
             String lastName,
             List<String> roles,
-            Instant createdAt
+            Instant createdAt,
+            String alertEmail,
+            boolean alertsEnabled
     ) {}
 
     public record OrganizationInfo(

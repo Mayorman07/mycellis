@@ -105,6 +105,13 @@ export type User = {
   lastName: string;
   roles: string[];
   createdAt: string;
+  alertEmail: string | null;
+  alertsEnabled: boolean;
+};
+
+export type UpdateAlertPreferencesRequest = {
+  alertEmail: string | null;
+  alertsEnabled: boolean;
 };
 
 export type Organization = {
