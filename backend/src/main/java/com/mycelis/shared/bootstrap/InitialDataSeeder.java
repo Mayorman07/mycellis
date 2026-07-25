@@ -28,7 +28,7 @@ import java.util.Set;
 
 @Slf4j
 @Component
-@Profile({"dev", "local"})
+@Profile({"dev", "local", "prod"})
 @RequiredArgsConstructor
 public class InitialDataSeeder {
 
@@ -132,10 +132,9 @@ public class InitialDataSeeder {
     }
 
     private void seedSuperAdmin(Role superAdminRole) {
-        String missingProperty = firstMissingSeedProperty();
-        if (missingProperty != null) {
-            log.warn("Super admin seed skipped: required property '{}' is missing. " +
-                    "This is expected on dev machines not configured for seeding.", missingProperty);
+        String missingEnvVar = firstMissingSeedEnvVar();
+        if (missingEnvVar != null) {
+            log.warn("{} not set — skipping super admin seed", missingEnvVar);
             return;
         }
 
@@ -191,14 +190,15 @@ public class InitialDataSeeder {
     }
 
     /**
-     * Returns the property key of the first missing required seed value, or null
-     * if all are present. first-name/last-name aren't checked — application-dev.properties
-     * gives them static defaults, so they're always present in dev.
+     * Returns the OS env var name of the first missing required seed value, or
+     * null if all are present. first-name/last-name aren't checked — they have
+     * static defaults (application-dev.properties) or empty-string defaults
+     * (application-prod.properties) and User.firstName/lastName tolerate blanks.
      */
-    private String firstMissingSeedProperty() {
-        if (adminEmail == null || adminEmail.isBlank()) return "mycelis.seed.super-admin.email";
-        if (adminPassword == null || adminPassword.isBlank()) return "mycelis.seed.super-admin.password";
-        if (adminMobile == null || adminMobile.isBlank()) return "mycelis.seed.super-admin.mobile";
+    private String firstMissingSeedEnvVar() {
+        if (adminEmail == null || adminEmail.isBlank()) return "MYCELIS_ADMIN_EMAIL";
+        if (adminPassword == null || adminPassword.isBlank()) return "MYCELIS_ADMIN_PASSWORD";
+        if (adminMobile == null || adminMobile.isBlank()) return "MYCELIS_ADMIN_MOBILE";
         return null;
     }
 }

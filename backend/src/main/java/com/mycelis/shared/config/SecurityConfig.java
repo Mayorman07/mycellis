@@ -4,6 +4,7 @@ import com.mycelis.user.security.MycelisUserDetailsService;
 import com.mycelis.user.security.RestAccessDeniedHandler;
 import com.mycelis.user.security.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +18,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
@@ -27,9 +34,35 @@ public class SecurityConfig {
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
+    // Cloudflare Pages (mycellis.dev) and Fly.io (api.mycellis.dev) are
+    // separate origins in production — without this, every authenticated
+    // cross-origin request fails the browser's CORS preflight. The
+    // :http://localhost:5173 default keeps dev working unchanged and means
+    // a missing CORS_ALLOWED_ORIGINS on Fly degrades to a safe default
+    // instead of crashing boot.
+    @Value("${mycelis.cors.allowed-origins:http://localhost:5173}")
+    private String corsAllowedOrigins;
+
     @Bean
     public SecurityContextRepository securityContextRepository() {
         return new HttpSessionSecurityContextRepository();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        List<String> allowedOrigins = Arrays.stream(corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        config.setAllowedOrigins(allowedOrigins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true); // required for session cookies
+        config.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean
@@ -51,6 +84,9 @@ public class SecurityConfig {
                 // CSRF: cookie-based token for session SPAs.
                 // withHttpOnlyFalse so JS can read it and echo it in the X-XSRF-TOKEN header.
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // Cross-origin requests (mycellis.dev -> api.mycellis.dev in prod)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // Persist SecurityContext to HTTP session so login is "sticky"
                 // across requests via the JSESSIONID cookie.
