@@ -2,9 +2,11 @@ package com.mycelis.superadmin.service;
 
 import com.mycelis.membership.entity.Membership;
 import com.mycelis.membership.repository.MembershipRepository;
+import com.mycelis.monitoring.dto.responses.BatchPulsesResponse;
 import com.mycelis.monitoring.dto.responses.StalkResponse;
 import com.mycelis.monitoring.entity.Stalk;
 import com.mycelis.monitoring.repository.StalkRepository;
+import com.mycelis.monitoring.service.StalkService;
 import com.mycelis.organization.entity.Organization;
 import com.mycelis.organization.repository.OrganizationRepository;
 import com.mycelis.shared.exception.ResourceNotFoundException;
@@ -34,6 +36,7 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
     private final StalkRepository stalkRepository;
+    private final StalkService stalkService;
 
     @Override
     @Transactional(readOnly = true)
@@ -102,6 +105,12 @@ public class SuperAdminServiceImpl implements SuperAdminService {
                 organization.getCreatedAt(),
                 members
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BatchPulsesResponse getBatchPulses(Set<UUID> stalkIds, int limit) {
+        return stalkService.getBatchPulsesUnscoped(stalkIds, limit);
     }
 
     private SuperAdminUserSummary toUserSummary(User user, Membership primary, Map<UUID, Organization> orgsById) {

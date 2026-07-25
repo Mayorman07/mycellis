@@ -1,8 +1,12 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getOrganizationDetail, getOrganizationStalks } from '../lib/api/superAdmin';
+import {
+  getOrganizationDetail,
+  getOrganizationStalks,
+  getSuperAdminBatchPulses,
+} from '../lib/api/superAdmin';
 import type { ApiError } from '../lib/api/client';
-import type { SuperAdminOrgDetail, Stalk } from '../lib/types';
+import type { BatchPulsesResponse, SuperAdminOrgDetail, Stalk } from '../lib/types';
 import { SuperAdminBanner } from '../components/superadmin/SuperAdminBanner';
 import { StalkRow } from '../components/dashboard/StalkRow';
 
@@ -13,6 +17,7 @@ import { StalkRow } from '../components/dashboard/StalkRow';
 // since its onClick is a real, controllable prop.
 const GRID_COLS = 'grid-cols-[2fr_1fr_2fr_0.5fr_0.5fr_0.3fr]';
 const HEADER_LABELS = ['Stalk', 'State', 'Last 40 pulses', 'Latency', 'Uptime'];
+const PULSES_PER_STALK = 40;
 
 function noop() {}
 
@@ -26,13 +31,18 @@ export default function SuperAdminOrgStalksPage() {
   });
 
   const stalksQuery = useQuery<Stalk[], ApiError>({
-    // No pulse data exists for cross-tenant stalks (no super-admin batch-pulses
-    // endpoint) — StalkRow's sparkline correctly renders its own "no data"
-    // empty state when given an empty pulses array, so this is a visual
-    // MVP limitation, not a broken render.
     queryKey: ['super-admin', 'organization', orgId, 'stalks'],
     queryFn: () => getOrganizationStalks(orgId!),
     enabled: !!orgId,
+  });
+
+  const stalkIds = stalksQuery.data?.map((s) => s.id) ?? [];
+  const sortedStalkIds = [...stalkIds].sort();
+
+  const pulsesQuery = useQuery<BatchPulsesResponse, ApiError>({
+    queryKey: ['super-admin', 'pulses', 'batch', sortedStalkIds.join(',')],
+    queryFn: () => getSuperAdminBatchPulses(sortedStalkIds, PULSES_PER_STALK),
+    enabled: sortedStalkIds.length > 0,
   });
 
   if (orgQuery.isPending || stalksQuery.isPending) {
@@ -93,7 +103,12 @@ export default function SuperAdminOrgStalksPage() {
               ))}
             </div>
             {stalks.map((stalk) => (
-              <StalkRow key={stalk.id} stalk={stalk} pulses={[]} onClick={noop} />
+              <StalkRow
+                key={stalk.id}
+                stalk={stalk}
+                pulses={pulsesQuery.data?.pulsesByStalkId[stalk.id] ?? []}
+                onClick={noop}
+              />
             ))}
           </div>
         )}

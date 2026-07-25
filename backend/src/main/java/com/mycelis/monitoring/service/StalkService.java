@@ -104,4 +104,17 @@ public interface StalkService {
      * @return response keyed only by ids the organization actually owns
      */
     BatchPulsesResponse getBatchPulses(Set<UUID> stalkIds, int limit, UUID organizationId);
+
+    /**
+     * Cross-tenant variant of {@link #getBatchPulses} — every requested id is
+     * looked up regardless of owning organization. Only safe to call from a
+     * path already gated by super-admin authorization (see
+     * {@code SuperAdminService}), same convention as
+     * {@code StalkRepository#findByOrganizationId}'s cross-tenant note.
+     *
+     * @param stalkIds requested stalk identifiers
+     * @param limit max pulses to return per stalk
+     * @return response keyed by every id that actually exists (missing ids absent)
+     */
+    BatchPulsesResponse getBatchPulsesUnscoped(Set<UUID> stalkIds, int limit);
 }

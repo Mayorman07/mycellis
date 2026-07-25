@@ -200,26 +200,53 @@ public class StalkServiceImpl implements StalkService {
             return BatchPulsesResponse.builder().pulsesByStalkId(Map.of()).build();
         }
 
-        Map<UUID, Stalk> ownedStalksById = ownedStalks.stream()
+        BatchPulsesResponse response = buildBatchPulsesResponse(ownedStalks, limit);
+        log.info("Batch pulses returned: orgId={}, requested={}, owned={}",
+                organizationId, stalkIds.size(), ownedStalks.size());
+        return response;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BatchPulsesResponse getBatchPulsesUnscoped(Set<UUID> stalkIds, int limit) {
+        if (stalkIds.isEmpty()) {
+            return BatchPulsesResponse.builder().pulsesByStalkId(Map.of()).build();
+        }
+
+        List<Stalk> stalks = stalkRepository.findAllById(stalkIds);
+        if (stalks.isEmpty()) {
+            log.debug("Unscoped batch pulses: none of {} requested stalkIds exist", stalkIds.size());
+            return BatchPulsesResponse.builder().pulsesByStalkId(Map.of()).build();
+        }
+
+        BatchPulsesResponse response = buildBatchPulsesResponse(stalks, limit);
+        log.info("Unscoped batch pulses returned: requested={}, found={}", stalkIds.size(), stalks.size());
+        return response;
+    }
+
+    /**
+     * Shared pulse-fetch + grouping logic for both the tenant-scoped and
+     * unscoped batch pulses variants — the only difference between them is
+     * how the stalk list itself was filtered before reaching here.
+     */
+    private BatchPulsesResponse buildBatchPulsesResponse(List<Stalk> stalks, int limit) {
+        Map<UUID, Stalk> stalksById = stalks.stream()
                 .collect(Collectors.toMap(Stalk::getId, Function.identity()));
 
-        List<Pulse> pulses = pulseRepository.findRecentByStalkIds(ownedStalksById.keySet(), limit);
+        List<Pulse> pulses = pulseRepository.findRecentByStalkIds(stalksById.keySet(), limit);
 
         Map<UUID, List<PulseResponse>> grouped = pulses.stream()
                 .collect(Collectors.groupingBy(
                         p -> p.getStalk().getId(),
                         Collectors.mapping(
-                                p -> pulseMapper.toResponse(p, ownedStalksById.get(p.getStalk().getId())),
+                                p -> pulseMapper.toResponse(p, stalksById.get(p.getStalk().getId())),
                                 Collectors.toList())));
 
-        // Every owned id gets a key even with zero pulses — the frontend shouldn't
-        // have to distinguish "no data yet" from "id wasn't in the response".
-        for (UUID ownedId : ownedStalksById.keySet()) {
-            grouped.putIfAbsent(ownedId, List.of());
+        // Every requested id gets a key even with zero pulses — the frontend
+        // shouldn't have to distinguish "no data yet" from "id wasn't in the response".
+        for (UUID id : stalksById.keySet()) {
+            grouped.putIfAbsent(id, List.of());
         }
-
-        log.info("Batch pulses returned: orgId={}, requested={}, owned={}, totalPulses={}",
-                organizationId, stalkIds.size(), ownedStalksById.size(), pulses.size());
 
         return BatchPulsesResponse.builder().pulsesByStalkId(grouped).build();
     }

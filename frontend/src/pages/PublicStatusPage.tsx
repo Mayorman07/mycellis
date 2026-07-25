@@ -22,11 +22,34 @@ function formatRelativeTime(iso: string): string {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
-const OVERALL_STATE_COPY: Record<OverallState, { sentence: string; colorClass: string }> = {
-  HEALTHY: { sentence: 'The ecosystem is healthy.', colorClass: 'text-state-healthy' },
-  STRESSED: { sentence: 'The ecosystem is under stress.', colorClass: 'text-state-stressed' },
-  DEGRADED: { sentence: 'The ecosystem is degraded.', colorClass: 'text-state-stressed' },
-  IMPAIRED: { sentence: 'The ecosystem is impaired.', colorClass: 'text-state-down' },
+const OVERALL_STATE_COPY: Record<
+  OverallState,
+  { sentence: string; colorClass: string; subtitle: string; subtitleColorClass: string }
+> = {
+  HEALTHY: {
+    sentence: 'The ecosystem is healthy.',
+    colorClass: 'text-state-healthy',
+    subtitle: 'All services are operating normally.',
+    subtitleColorClass: 'text-ink-muted',
+  },
+  STRESSED: {
+    sentence: 'The ecosystem is under stress.',
+    colorClass: 'text-state-stressed',
+    subtitle: 'Some services are experiencing elevated latency.',
+    subtitleColorClass: 'text-state-stressed',
+  },
+  DEGRADED: {
+    sentence: 'The ecosystem is degraded.',
+    colorClass: 'text-state-stressed',
+    subtitle: 'Some services are running slowly or failing.',
+    subtitleColorClass: 'text-state-stressed',
+  },
+  IMPAIRED: {
+    sentence: 'The ecosystem is impaired.',
+    colorClass: 'text-state-down',
+    subtitle: 'One or more services are unavailable.',
+    subtitleColorClass: 'text-state-down',
+  },
 };
 
 function uptimeBarColorClass(value: number | null): string {
@@ -138,6 +161,7 @@ export default function PublicStatusPage() {
         <h1 className={`font-display font-normal text-[36px] leading-tight tracking-tight mb-2 ${overall.colorClass}`}>
           {overall.sentence}
         </h1>
+        <p className={`font-mono text-sm mb-2 ${overall.subtitleColorClass}`}>{overall.subtitle}</p>
         <p className="font-mono text-xs text-ink-subtle">
           Last updated {formatRelativeTime(status.lastUpdated)}
         </p>
