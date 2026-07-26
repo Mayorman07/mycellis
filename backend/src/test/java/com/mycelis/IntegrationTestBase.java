@@ -41,6 +41,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @Test's transaction starts), it leaves a one-time, non-rolled-back
  * test-admin@example.test super admin in the real dev DB the first time this
  * suite runs anywhere — idempotent (skipped) on every run after that.</p>
+ *
+ * <p>mycelis.alerts.scheduling.enabled=false disables AlertEngine's
+ * @Scheduled tick for the whole test context — without it, every class
+ * extending this base boots a real, ticking AlertEngine against the shared
+ * dev DB, firing real DOWN/RECOVERY emails against whatever real stalks
+ * happen to have failing pulse history at the time, as a side effect
+ * completely unrelated to whatever a given test is actually checking.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -68,6 +75,7 @@ public abstract class IntegrationTestBase {
         registry.add("mycelis.seed.super-admin.email", () -> "test-admin@example.test");
         registry.add("mycelis.seed.super-admin.password", () -> "TestAdminPass123!");
         registry.add("mycelis.seed.super-admin.mobile", () -> "+15555559999");
+        registry.add("mycelis.alerts.scheduling.enabled", () -> "false");
     }
 
     protected String uniqueEmail(String label) {

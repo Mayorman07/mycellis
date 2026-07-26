@@ -13,6 +13,7 @@ import com.mycelis.user.entity.User;
 import com.mycelis.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -42,9 +43,17 @@ import java.util.List;
  * recent alert row for a stalk is a DOWN" means there's an open incident, so
  * no further DOWN fires until a RECOVERY is recorded. No separate in-memory
  * or Stalk-column tracking needed.</p>
+ *
+ * <p>Disabled entirely under IntegrationTestBase (see its
+ * mycelis.alerts.scheduling.enabled=false override) — otherwise every
+ * integration test class boots a real, ticking AlertEngine against the
+ * shared dev DB and fires real alerts against whatever real stalks happen
+ * to have failing pulse history, independent of what any given test is
+ * actually checking.</p>
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "mycelis.alerts.scheduling.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class AlertEngine {
 
