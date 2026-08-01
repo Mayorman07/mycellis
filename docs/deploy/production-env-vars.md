@@ -30,16 +30,25 @@ the properties file expects.
 
 ## Email (Resend)
 
-Sign up at resend.com, verify the mycellis.dev sending domain, get an API key.
-Credentials themselves are Commit 21 — this just documents the properties
-that already expect them.
+Sign up at resend.com, verify the send.mycellis.dev sending domain, get an
+API key.
 
-- `MAIL_HOST` — smtp.resend.com
-- `MAIL_PORT` — 465
-- `MAIL_USERNAME` — resend
-- `MAIL_PASSWORD` — re_... (Resend API key)
-- `MAIL_FROM` — noreply@mycellis.dev
-- `MAIL_FROM_NAME` — Mycellis
+**Wired as of Commit 21 as a direct REST API call** (`RestClient` POST to
+`https://api.resend.com/emails`, Bearer-token auth) — not an SMTP relay.
+Commit 20's original entry here assumed Resend would be used via its SMTP
+endpoint (`smtp.resend.com`); that never got wired. `MAIL_HOST`/`MAIL_PORT`/
+`MAIL_USERNAME`/`MAIL_PASSWORD` are no longer required in prod — they still
+exist as properties (with safe inert defaults) only because Spring Boot's
+own mail autoconfiguration binds `spring.mail.*` eagerly regardless of which
+`EmailService` implementation is actually active.
+
+- `MYCELIS_EMAIL_FROM` — `Mycellis <noreply@send.mycellis.dev>` (must be a
+  verified sender on the Resend account)
+- `RESEND_API_KEY` — `re_...` (Resend API key — **never commit this value**)
+
+If either is blank while `mycelis.email.provider=resend` (the prod default),
+the app now fails to start with a clear error naming the missing var, rather
+than booting with a broken email path.
 
 ## Super Admin Seed
 
@@ -127,8 +136,7 @@ Not for execution here — for Commit 23:
 fly launch --dockerfile backend/Dockerfile --name mycellis-backend
 fly postgres create --name mycellis-db
 fly postgres attach mycellis-db
-fly secrets set MAIL_HOST=smtp.resend.com MAIL_PORT=465 MAIL_USERNAME=resend MAIL_PASSWORD=re_...
-fly secrets set MAIL_FROM=noreply@mycellis.dev MAIL_FROM_NAME=Mycellis
+fly secrets set RESEND_API_KEY=re_... MYCELIS_EMAIL_FROM="Mycellis <noreply@send.mycellis.dev>"
 fly secrets set FRONTEND_URL=https://mycellis.dev BACKEND_URL=https://api.mycellis.dev APP_BASE_URL=https://api.mycellis.dev
 fly secrets set CORS_ALLOWED_ORIGINS=https://mycellis.dev,https://www.mycellis.dev
 fly deploy

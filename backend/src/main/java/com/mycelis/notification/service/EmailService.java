@@ -3,9 +3,12 @@ package com.mycelis.notification.service;
 /**
  * Abstraction over email delivery providers.
  * <p>
- * Implementations are selected by Spring profile:
- *   - SmtpEmailService  (dev, local)  → MailHog
- *   - SesEmailService   (prod)        → AWS SES
+ * Implementations are selected by the mycelis.email.provider property
+ * (@ConditionalOnProperty), not Spring profile — this lets the provider be
+ * overridden independently of dev/prod (e.g. testing Resend locally via an
+ * env var without switching profiles):
+ *   - SmtpEmailService    (provider=smtp, default) → MailHog in dev
+ *   - ResendEmailService  (provider=resend)        → Resend REST API, for prod
  */
 public interface EmailService {
 

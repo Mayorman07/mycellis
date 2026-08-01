@@ -4,6 +4,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -16,6 +17,7 @@ import jakarta.mail.MessagingException;
 @Slf4j
 @Service
 @Profile({"dev", "local"})
+@ConditionalOnProperty(name = "mycelis.email.provider", havingValue = "smtp", matchIfMissing = true)
 @RequiredArgsConstructor
 public class SmtpEmailService implements EmailService {
 
