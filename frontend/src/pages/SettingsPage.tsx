@@ -269,7 +269,7 @@ function AlertsSection({ user }: { user: User }) {
           />
         </div>
         <div className="flex items-center justify-between py-4">
-          <span className="text-sm text-ink">Send me alerts when my stalks go down</span>
+          <span className="text-sm text-ink">Send me alerts when my stalks are wilting</span>
           <ToggleSwitch
             checked={alertsEnabled}
             onChange={(next) => {
