@@ -46,7 +46,7 @@ public class SmtpEmailService implements EmailService {
         } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Failed to send email to {} | subject='{}'", to, subject, e);
             // Swallow for dev: we don't want email failures to crash callers.
-            // In production, push to a dead-letter queue for retry.
+            // In production, explore pushing to a dead-letter queue for retry.
         }
     }
 }

@@ -13,7 +13,7 @@ package com.mycelis.notification.service;
 public interface EmailService {
 
     /**
-     * Send a pre-rendered HTML email. Must not block the caller; impls
+     * Send a pre-rendered HTML email. Must not block the caller; implementations
      * should run on a separate thread (@Async or the provider's own pool).
      */
     void send(String to, String subject, String htmlBody);
