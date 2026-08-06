@@ -35,7 +35,7 @@ public class DatabaseUrlConfiguration implements EnvironmentPostProcessor {
         // Pass through unchanged if not Fly's postgres:// format — covers both
         // "not set" (dev, which uses application.properties's own
         // spring.datasource.url) and "already jdbc:" (nothing to translate).
-        if (databaseUrl == null || !databaseUrl.startsWith("postgres://")) {
+        if (databaseUrl == null || !(databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql://"))) {
             return;
         }
 
