@@ -17,10 +17,16 @@ export class ApiError extends Error {
   }
 }
 
-/** Accepts both 'me' and '/api/me' so callers don't have to think about the prefix. */
+/**
+ * Accepts both 'me' and '/api/me' so callers don't have to think about the
+ * prefix. VITE_API_BASE_URL is empty in dev (Vite's proxy in vite.config.ts
+ * forwards relative /api/* requests to the local backend) and the Fly
+ * backend origin in prod (no proxy once served as static assets from
+ * Cloudflare Pages).
+ */
 function resolvePath(path: string): string {
-  if (path.startsWith('/api')) return path;
-  return path.startsWith('/') ? `/api${path}` : `/api/${path}`;
+  const apiPath = path.startsWith('/api') ? path : path.startsWith('/') ? `/api${path}` : `/api/${path}`;
+  return `${import.meta.env.VITE_API_BASE_URL ?? ''}${apiPath}`;
 }
 
 export async function apiFetch<TResponse>(path: string, options: RequestInit = {}): Promise<TResponse> {
