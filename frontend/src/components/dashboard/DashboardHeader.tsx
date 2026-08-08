@@ -224,6 +224,16 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
                 Super admin
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/guide');
+                closeMenu();
+              }}
+              className="flex items-center min-h-[44px] px-3 rounded-md text-sm text-ink-subtle"
+            >
+              2-minute guide
+            </button>
           </nav>
 
           <div className="mt-auto p-4 border-t border-hairline">

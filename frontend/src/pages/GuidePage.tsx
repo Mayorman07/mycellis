@@ -2,6 +2,12 @@ import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { getTheme, setTheme } from '../lib/theme';
 
+// Same petal geometry as MycellisFlowerLoader — copied, not imported, since
+// this ornament is a static section divider (no animation, no motion prefs).
+const DIVIDER_PETAL_PATH = 'M 50,47 C 59,42 59,26 55,17 C 53,12.5 47,12.5 45,17 C 41,26 41,42 50,47 Z';
+const DIVIDER_PETAL_ANGLES = [0, 72, 144, 216, 288];
+const DIVIDER_COLOR = 'color-mix(in srgb, var(--color-brand) 35%, transparent)';
+
 export default function GuidePage() {
   // Same locked-cream, per-page mount/unmount pattern as the auth pages and
   // the public status page — this is a public marketing/docs surface,
@@ -26,24 +32,30 @@ export default function GuidePage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-6 py-16">
-        <section className="mb-16">
+        <section>
           <h1 className="font-display font-normal text-[46px] leading-tight tracking-tight text-ink mb-4">
             Welcome to Mycellis
           </h1>
           <p className="text-lg text-ink-muted leading-[1.6] mb-6">
             Your digital ecosystem, breathing in real time.
           </p>
-          <p className="text-ink-muted leading-[1.6] mb-4">
+          <p className="text-ink-muted leading-[1.6] mb-4 overflow-hidden [&::first-letter]:font-display [&::first-letter]:text-ink [&::first-letter]:float-left [&::first-letter]:leading-none [&::first-letter]:mr-2 [&::first-letter]:mt-1 [&::first-letter]:text-[56px] md:[&::first-letter]:text-[72px]">
             Mycellis watches the endpoints your product depends on and keeps track of their
             health, latency, and uptime.
           </p>
+          <PullQuote>
+            When everything is healthy, you know. When something starts to fail, you know before
+            your users do.
+          </PullQuote>
           <p className="text-ink-muted leading-[1.6]">
             When everything is healthy, you know. When something starts to fail, you know before
             your users do.
           </p>
         </section>
 
-        <section className="mb-16">
+        <SectionDivider />
+
+        <section>
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
             The basics
           </p>
@@ -53,6 +65,7 @@ export default function GuidePage() {
           <p className="text-ink-muted leading-[1.6] mb-4">
             A stalk is an endpoint you want Mycellis to watch.
           </p>
+          <PullQuote>Think of each stalk as a living part of your digital ecosystem.</PullQuote>
           <p className="text-ink-muted leading-[1.6] mb-4">
             It can be an API, webhook, service, or any URL your product depends on. Mycellis
             sends a pulse at the interval you choose and records how it responds.
@@ -63,7 +76,9 @@ export default function GuidePage() {
           </p>
         </section>
 
-        <section className="mb-16">
+        <SectionDivider />
+
+        <section>
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
             Getting started
           </p>
@@ -98,7 +113,9 @@ export default function GuidePage() {
           </div>
         </section>
 
-        <section className="mb-16">
+        <SectionDivider />
+
+        <section>
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
             Your dashboard
           </p>
@@ -108,6 +125,9 @@ export default function GuidePage() {
           <p className="text-ink-muted leading-[1.6] mb-8">
             Your dashboard gives you the state of your entire ecosystem at a glance.
           </p>
+          <PullQuote>
+            Your dashboard gives you the state of your entire ecosystem at a glance.
+          </PullQuote>
 
           <div className="space-y-5">
             <MetricExplainer
@@ -129,13 +149,16 @@ export default function GuidePage() {
           </div>
         </section>
 
-        <section className="mb-16">
+        <SectionDivider />
+
+        <section>
           <h2 className="font-display font-normal text-[32px] leading-tight tracking-tight text-ink mb-4">
             Then, let Mycellis watch
           </h2>
           <p className="text-ink-muted leading-[1.6] mb-4">
             Your stalks become more useful with time.
           </p>
+          <PullQuote>When something changes, Mycellis tells you.</PullQuote>
           <p className="text-ink-muted leading-[1.6] mb-4">
             As Mycellis collects pulses, you'll build a history of how your ecosystem behaves —
             its uptime, latency, failures, and recovery.
@@ -145,6 +168,8 @@ export default function GuidePage() {
             changes, Mycellis tells you.
           </p>
         </section>
+
+        <SectionDivider />
 
         <section className="mb-16">
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">FAQ</p>
@@ -213,6 +238,29 @@ function FaqItem({ question, answer }: { question: string; answer: ReactNode }) 
     <div>
       <p className="font-semibold text-ink mb-1">{question}</p>
       <p className="text-ink-muted leading-[1.6]">{answer}</p>
+    </div>
+  );
+}
+
+function PullQuote({ children }: { children: ReactNode }) {
+  return (
+    <blockquote className="font-display italic text-ink-subtle text-[20px] md:text-[22px] leading-snug border-l-2 border-brand pl-4 my-6 md:my-8">
+      {children}
+    </blockquote>
+  );
+}
+
+function SectionDivider() {
+  return (
+    <div role="presentation" aria-hidden="true" className="flex justify-center my-12 md:my-16">
+      <svg viewBox="0 0 100 100" className="w-5 h-5 md:w-6 md:h-6">
+        {DIVIDER_PETAL_ANGLES.map((angle) => (
+          <g key={angle} transform={`rotate(${angle} 50 50)`}>
+            <path d={DIVIDER_PETAL_PATH} fill={DIVIDER_COLOR} />
+          </g>
+        ))}
+        <circle cx="50" cy="50" r="8" fill={DIVIDER_COLOR} />
+      </svg>
     </div>
   );
 }

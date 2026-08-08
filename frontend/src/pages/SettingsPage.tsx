@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../lib/hooks/useSession';
 import { logout } from '../lib/api/auth';
@@ -153,7 +153,7 @@ export default function SettingsPage() {
 
         <AlertsSection user={user} />
 
-        <section>
+        <section className="mb-8">
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
             Actions
           </p>
@@ -166,6 +166,22 @@ export default function SettingsPage() {
               isBusy={logoutMutation.isPending}
               disabled={logoutMutation.isPending}
               onClick={() => logoutMutation.mutate()}
+            />
+          </div>
+        </section>
+
+        <section>
+          <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
+            Resources
+          </p>
+          <div className="rounded-lg border border-hairline bg-surface-raised py-2 px-6">
+            <InfoRow
+              label="2-minute guide"
+              value={
+                <Link to="/guide" className="text-ink hover:underline">
+                  Read →
+                </Link>
+              }
             />
           </div>
         </section>
