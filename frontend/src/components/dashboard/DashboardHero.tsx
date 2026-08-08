@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { pluralize } from '../../lib/pluralize';
 
 type DashboardHeroProps = {
   stalksCount: number;
@@ -31,7 +32,7 @@ export function DashboardHero({ stalksCount, lastSyncedAt }: DashboardHeroProps)
           MYCELLIS · LIVE · SYNCED {formatSynced(elapsedMs)}
         </p>
         <h1 className="font-display font-[450] text-[64px] leading-tight tracking-[-0.02em] text-ink mt-2">
-          {stalksCount} stalks, breathing.
+          {stalksCount} {pluralize(stalksCount, 'stalk')}, breathing.
         </h1>
       </div>
       <button

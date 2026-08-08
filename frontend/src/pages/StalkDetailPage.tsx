@@ -9,6 +9,7 @@ import { StatusDot } from '../components/dashboard/StatusDot';
 import { StatePill } from '../components/dashboard/StatePill';
 import { Sparkline } from '../components/dashboard/Sparkline';
 import { DeleteStalkModal } from '../components/stalks/DeleteStalkModal';
+import { pluralize } from '../lib/pluralize';
 
 const PULSE_HISTORY_LIMIT = 200;
 const REFETCH_INTERVAL_MS = 15_000;
@@ -160,7 +161,7 @@ export default function StalkDetailPage() {
             label="Uptime"
             value={uptimeLabel}
             valueColorClass={uptimeColorClass}
-            secondary={`last ${PULSE_HISTORY_LIMIT} pulses`}
+            secondary={`last ${PULSE_HISTORY_LIMIT} ${pluralize(PULSE_HISTORY_LIMIT, 'pulse')}`}
           />
           <MetricCard
             label="Avg latency"
@@ -186,7 +187,7 @@ export default function StalkDetailPage() {
 
         <section className="mb-10">
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
-            Last {PULSE_HISTORY_LIMIT} pulses
+            Last {PULSE_HISTORY_LIMIT} {pluralize(PULSE_HISTORY_LIMIT, 'pulse')}
           </p>
           <div className="max-w-full overflow-x-auto">
             <div style={{ maxWidth: SPARKLINE_WIDTH_PX }}>

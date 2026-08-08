@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '../lib/hooks/useSession';
 import { logout } from '../lib/api/auth';
 import { updateAlertPreferences } from '../lib/api/me';
+import { pluralize } from '../lib/pluralize';
 import type { ApiError } from '../lib/api/client';
 import type { MeResponse, PlanTier, User } from '../lib/types';
 
@@ -43,7 +44,7 @@ function formatMemberSince(iso: string): string {
 }
 
 function formatMemberCount(count: number): string {
-  return `${count} member${count === 1 ? '' : 's'}`;
+  return `${count} ${pluralize(count, 'member')}`;
 }
 
 export default function SettingsPage() {
