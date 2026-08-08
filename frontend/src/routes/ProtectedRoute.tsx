@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../lib/hooks/useSession';
+import { MycellisFlowerLoader } from '../components/shared/MycellisFlowerLoader';
 
 // Never capture these as a return target — capturing them would send a user
 // straight back to the page that redirected them here in the first place.
@@ -12,7 +13,7 @@ export function ProtectedRoute() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-hairline border-t-ink-subtle animate-spin" />
+        <MycellisFlowerLoader size="md" />
       </div>
     );
   }

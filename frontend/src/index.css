@@ -103,6 +103,22 @@ body {
   }
 }
 
+/* MycellisFlowerLoader's bloom/close cycle — synchronized across all 5
+   petals (no per-petal stagger), scaling and fading from/to a near-closed
+   state around the flower's fixed center point (see the component itself
+   for the transform-origin reasoning). */
+@keyframes mycellis-flower-bloom {
+  0%,
+  100% {
+    transform: scale(0.15);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* Empty-state breathing animation — slower and gentler; the calmest visual on the page */
 @keyframes mycellis-breath-calm {
   0%,

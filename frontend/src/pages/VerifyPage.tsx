@@ -4,6 +4,7 @@ import { verifyEmail } from '../lib/api/auth';
 import { ApiError } from '../lib/api/client';
 import { getTheme, setTheme } from '../lib/theme';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
+import { MycellisFlowerLoader } from '../components/shared/MycellisFlowerLoader';
 
 type VerifyState =
   | { kind: 'missing-token' }
@@ -119,7 +120,9 @@ export default function VerifyPage() {
             </h1>
 
             {isLoading ? (
-              <div className="w-8 h-8 rounded-full border-2 border-hairline border-t-ink-subtle animate-spin mb-8" />
+              <div className="mb-8">
+                <MycellisFlowerLoader size="md" />
+              </div>
             ) : (
               content.subhead && (
                 <p className="max-w-[440px] text-ink-muted leading-[1.5] mb-8">

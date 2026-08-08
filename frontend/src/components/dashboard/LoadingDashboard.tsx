@@ -1,3 +1,5 @@
+import { MycellisFlowerLoader } from '../shared/MycellisFlowerLoader';
+
 const GRID_COLS = 'grid-cols-[2fr_1fr_2fr_0.5fr_0.5fr_0.3fr]';
 const HEADER_LABELS = ['Stalk', 'State', 'Last 40 pulses', 'Latency', 'Uptime'];
 const SKELETON_ROW_COUNT = 5;
@@ -6,11 +8,8 @@ const SPARKLINE_BAR_COUNT = 20;
 export function LoadingDashboard() {
   return (
     <div>
-      <div className="flex items-center gap-2 py-10">
-        <span
-          className="inline-block w-2 h-2 rounded-full bg-state-healthy"
-          style={{ animation: 'mycellis-breath 2.6s ease-in-out infinite' }}
-        />
+      <div className="flex flex-col items-center justify-center gap-3 py-10">
+        <MycellisFlowerLoader size="lg" />
         <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle">
           Gathering pulses…
         </p>

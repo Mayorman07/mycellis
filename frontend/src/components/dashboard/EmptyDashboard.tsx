@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 type EmptyDashboardProps = {
   orgName: string;
   onCreateStalk: () => void;
@@ -36,10 +38,9 @@ export function EmptyDashboard({ orgName, onCreateStalk }: EmptyDashboardProps) 
         >
           + Plant your first stalk
         </button>
-        {/* TODO: link to the 2-minute guide once that page exists */}
-        <button type="button" className="text-sm text-ink-subtle">
+        <Link to="/guide" className="text-sm text-ink-subtle">
           Read the 2-minute guide →
-        </button>
+        </Link>
       </div>
     </div>
   );
