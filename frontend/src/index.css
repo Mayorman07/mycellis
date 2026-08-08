@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Disables mobile browsers' automatic text-size inflation (font-boosting) —
+   the confirmed cause of the app rendering slightly zoomed-in on mobile,
+   worse on Chrome/Android than Safari/iOS since the two engines tune this
+   heuristic differently. Desktop browsers ignore this property entirely, so
+   desktop rendering is unaffected. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 :root,
 :root[data-theme='cream'] {
   --color-surface: #efe6d0;
