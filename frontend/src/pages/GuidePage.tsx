@@ -6,7 +6,8 @@ import { getTheme, setTheme } from '../lib/theme';
 // this ornament is a static section divider (no animation, no motion prefs).
 const DIVIDER_PETAL_PATH = 'M 50,47 C 59,42 59,26 55,17 C 53,12.5 47,12.5 45,17 C 41,26 41,42 50,47 Z';
 const DIVIDER_PETAL_ANGLES = [0, 72, 144, 216, 288];
-const DIVIDER_COLOR = 'color-mix(in srgb, var(--color-brand) 35%, transparent)';
+const DIVIDER_PETAL_COLOR = '#eccb52';
+const DIVIDER_CENTER_COLOR = 'var(--color-brand)';
 
 export default function GuidePage() {
   // Same locked-cream, per-page mount/unmount pattern as the auth pages and
@@ -253,13 +254,13 @@ function PullQuote({ children }: { children: ReactNode }) {
 function SectionDivider() {
   return (
     <div role="presentation" aria-hidden="true" className="flex justify-center my-12 md:my-16">
-      <svg viewBox="0 0 100 100" className="w-5 h-5 md:w-6 md:h-6">
+      <svg viewBox="0 0 100 100" className="w-8 h-8 md:w-10 md:h-10">
         {DIVIDER_PETAL_ANGLES.map((angle) => (
           <g key={angle} transform={`rotate(${angle} 50 50)`}>
-            <path d={DIVIDER_PETAL_PATH} fill={DIVIDER_COLOR} />
+            <path d={DIVIDER_PETAL_PATH} style={{ fill: DIVIDER_PETAL_COLOR }} />
           </g>
         ))}
-        <circle cx="50" cy="50" r="8" fill={DIVIDER_COLOR} />
+        <circle cx="50" cy="50" r="8" style={{ fill: DIVIDER_CENTER_COLOR }} />
       </svg>
     </div>
   );
