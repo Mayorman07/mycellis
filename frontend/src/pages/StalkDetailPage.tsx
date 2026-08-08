@@ -153,7 +153,7 @@ export default function StalkDetailPage() {
         <h1 className="font-display font-normal text-[40px] leading-tight tracking-tight text-ink mb-2">
           {stalk.nickname}.
         </h1>
-        <p className="font-mono text-sm text-ink-muted mb-8">{stalk.url}</p>
+        <p className="font-mono text-sm text-ink-muted mb-8 break-all">{stalk.url}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <MetricCard
@@ -188,17 +188,19 @@ export default function StalkDetailPage() {
           <p className="font-mono uppercase text-xs tracking-wider text-ink-subtle mb-3">
             Last {PULSE_HISTORY_LIMIT} pulses
           </p>
-          <div style={{ maxWidth: SPARKLINE_WIDTH_PX }}>
-            <Sparkline
-              pulses={pulses}
-              slotCount={PULSE_HISTORY_LIMIT}
-              barWidth={SPARKLINE_BAR_WIDTH}
-              gap={SPARKLINE_GAP}
-              height={110}
-            />
-            <div className="flex justify-between mt-2">
-              <span className="font-mono text-[10px] tracking-wider text-ink-subtle">OLDEST</span>
-              <span className="font-mono text-[10px] tracking-wider text-ink-subtle">NEWEST</span>
+          <div className="max-w-full overflow-x-auto">
+            <div style={{ maxWidth: SPARKLINE_WIDTH_PX }}>
+              <Sparkline
+                pulses={pulses}
+                slotCount={PULSE_HISTORY_LIMIT}
+                barWidth={SPARKLINE_BAR_WIDTH}
+                gap={SPARKLINE_GAP}
+                height={110}
+              />
+              <div className="flex justify-between mt-2">
+                <span className="font-mono text-[10px] tracking-wider text-ink-subtle">OLDEST</span>
+                <span className="font-mono text-[10px] tracking-wider text-ink-subtle">NEWEST</span>
+              </div>
             </div>
           </div>
         </section>

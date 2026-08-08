@@ -219,7 +219,9 @@ function ComponentRow({ stalk }: { stalk: PublicStalkStatus }) {
       </div>
 
       <div className="flex-1 min-w-[240px]">
-        <UptimeBarStrip history={stalk.uptimeHistory90d} />
+        <div className="overflow-x-auto">
+          <UptimeBarStrip history={stalk.uptimeHistory90d} />
+        </div>
         <div className="flex justify-between mt-1.5">
           <span className="font-mono text-[10px] tracking-wider text-ink-subtle">
             {UPTIME_WINDOW_DAYS} DAYS AGO
