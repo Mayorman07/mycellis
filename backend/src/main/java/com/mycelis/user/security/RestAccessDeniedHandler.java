@@ -29,7 +29,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.FORBIDDEN, "You do not have permission to access this resource");
         pd.setTitle("Access Denied");
-        pd.setType(URI.create("https://mycelis.io/errors/access-denied"));
+        pd.setType(URI.create("https://mycellis.dev/errors/access-denied"));
         pd.setProperty("timestamp", Instant.now());
 
         response.setStatus(HttpStatus.FORBIDDEN.value());

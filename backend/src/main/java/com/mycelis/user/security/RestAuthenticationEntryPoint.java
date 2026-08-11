@@ -29,7 +29,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED, "Authentication required");
         pd.setTitle("Unauthorized");
-        pd.setType(URI.create("https://mycelis.io/errors/unauthorized"));
+        pd.setType(URI.create("https://mycellis.dev/errors/unauthorized"));
         pd.setProperty("timestamp", Instant.now());
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());

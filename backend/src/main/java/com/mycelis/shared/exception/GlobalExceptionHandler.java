@@ -21,7 +21,7 @@ import java.time.Instant;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final String BASE_URI = "https://mycelis.io/errors/";
+    private static final String BASE_URI = "https://mycellis.dev/errors/";
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
