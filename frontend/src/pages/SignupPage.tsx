@@ -5,6 +5,7 @@ import { signup } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
 import type { Gender } from '../lib/types';
 import { getTheme, setTheme } from '../lib/theme';
+import { useDocumentTitle } from '../lib/hooks/useDocumentTitle';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
 import { HINT_CLASSES, INPUT_CLASSES, INPUT_ERROR_STYLE, LABEL_CLASSES } from '../lib/formClasses';
 import { isValidEmail } from '../lib/validation';
@@ -25,6 +26,8 @@ const PASSWORD_MIN_LENGTH = 8;
 const MOBILE_NUMBER_PATTERN = '^\\+?[0-9]{11,15}$';
 
 export default function SignupPage() {
+  useDocumentTitle('Get started · Mycellis');
+
   const navigate = useNavigate();
 
   const [firstName, setFirstName] = useState('');

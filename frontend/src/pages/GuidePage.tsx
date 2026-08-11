@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { getTheme, setTheme } from '../lib/theme';
+import { useDocumentTitle } from '../lib/hooks/useDocumentTitle';
 
 // Same petal geometry as MycellisFlowerLoader — copied, not imported, since
 // this ornament is a static section divider (no animation, no motion prefs).
@@ -10,6 +11,8 @@ const DIVIDER_PETAL_COLOR = '#eccb52';
 const DIVIDER_CENTER_COLOR = 'var(--color-brand)';
 
 export default function GuidePage() {
+  useDocumentTitle('Guide · Mycellis');
+
   // Same locked-cream, per-page mount/unmount pattern as the auth pages and
   // the public status page — this is a public marketing/docs surface,
   // session-agnostic, so it ignores whatever theme a logged-in visitor last

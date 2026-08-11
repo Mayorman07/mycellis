@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { login } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
 import { getTheme, setTheme } from '../lib/theme';
+import { useDocumentTitle } from '../lib/hooks/useDocumentTitle';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
 import { INPUT_CLASSES, LABEL_CLASSES } from '../lib/formClasses';
 
@@ -17,6 +18,8 @@ type LoginErrorMessage = {
 };
 
 export default function LoginPage() {
+  useDocumentTitle('Sign in · Mycellis');
+
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

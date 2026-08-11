@@ -2,8 +2,11 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getTheme, setTheme } from '../lib/theme';
 import { useSession } from '../lib/hooks/useSession';
+import { useDocumentTitle } from '../lib/hooks/useDocumentTitle';
 
 export default function HomePage() {
+  useDocumentTitle('Mycellis');
+
   // Same locked-cream pattern as GuidePage — this is a public page and
   // ignores whatever theme a logged-in visitor last set for themselves.
   useEffect(() => {

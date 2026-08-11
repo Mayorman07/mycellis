@@ -5,6 +5,7 @@ import { getPublicStatus } from '../lib/api/status';
 import type { ApiError } from '../lib/api/client';
 import type { OverallState, PublicStalkStatus, PublicStatusResponse } from '../lib/types';
 import { getTheme, setTheme } from '../lib/theme';
+import { useDocumentTitle } from '../lib/hooks/useDocumentTitle';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
 import { StatusDot } from '../components/dashboard/StatusDot';
 
@@ -80,6 +81,12 @@ export default function PublicStatusPage() {
     refetchInterval: REFETCH_INTERVAL_MS,
     retry: 1,
   });
+
+  // Org name isn't known until the query resolves — falls back to the plain
+  // brand title until then, same as the page shows before data arrives.
+  useDocumentTitle(
+    statusQuery.data ? `${statusQuery.data.organization.name} status · Mycellis` : 'Mycellis'
+  );
 
   if (statusQuery.isPending) {
     return (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../lib/hooks/useSession';
 import { useDashboardData } from '../lib/hooks/useDashboardData';
+import { useDocumentTitle } from '../lib/hooks/useDocumentTitle';
 import { DashboardHero } from '../components/dashboard/DashboardHero';
 import { KpiStrip } from '../components/dashboard/KpiStrip';
 import { StalkTable } from '../components/dashboard/StalkTable';
@@ -12,6 +13,8 @@ import { ErrorDashboard } from '../components/dashboard/ErrorDashboard';
 const INITIAL_LOAD_GRACE_MS = 300;
 
 export default function DashboardPage() {
+  useDocumentTitle('Dashboard · Mycellis');
+
   const navigate = useNavigate();
   const session = useSession();
   const { stalksQuery, pulsesQuery } = useDashboardData();
