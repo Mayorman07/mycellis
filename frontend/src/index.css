@@ -119,16 +119,16 @@ body {
   }
 }
 
-/* Empty-state breathing animation — slower and gentler; the calmest visual on the page */
-@keyframes mycellis-breath-calm {
+/* Empty-state hero flower — slow, whole-unit breathing scale (no opacity
+   change, no per-petal stagger); distinct from the loader's bloom/close
+   cycle above and the guide page's fully static divider flower. */
+@keyframes mycellis-hero-breathe {
   0%,
   100% {
-    transform: scale(1);
-    opacity: 1;
+    transform: scale(0.88);
   }
   50% {
-    transform: scale(1.06);
-    opacity: 0.92;
+    transform: scale(1.08);
   }
 }
 
