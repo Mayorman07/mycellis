@@ -48,10 +48,6 @@ export default function GuidePage() {
             When everything is healthy, you know. When something starts to fail, you know before
             your users do.
           </PullQuote>
-          <p className="text-ink-muted leading-[1.6]">
-            When everything is healthy, you know. When something starts to fail, you know before
-            your users do.
-          </p>
         </section>
 
         <SectionDivider />
@@ -72,8 +68,7 @@ export default function GuidePage() {
             sends a pulse at the interval you choose and records how it responds.
           </p>
           <p className="text-ink-muted leading-[1.6]">
-            Think of each stalk as a living part of your digital ecosystem. Healthy stalks
-            breathe normally. Stressed stalks tell you something needs attention.
+            Healthy stalks breathe normally. Stressed stalks tell you something needs attention.
           </p>
         </section>
 
@@ -123,9 +118,6 @@ export default function GuidePage() {
           <h2 className="font-display font-normal text-[32px] leading-tight tracking-tight text-ink mb-4">
             Reading your ecosystem
           </h2>
-          <p className="text-ink-muted leading-[1.6] mb-8">
-            Your dashboard gives you the state of your entire ecosystem at a glance.
-          </p>
           <PullQuote>
             Your dashboard gives you the state of your entire ecosystem at a glance.
           </PullQuote>
@@ -165,8 +157,7 @@ export default function GuidePage() {
             its uptime, latency, failures, and recovery.
           </p>
           <p className="text-ink-muted leading-[1.6]">
-            When everything is healthy, you don't need to stare at a dashboard. When something
-            changes, Mycellis tells you.
+            When everything is healthy, you don't need to stare at a dashboard.
           </p>
         </section>
 
