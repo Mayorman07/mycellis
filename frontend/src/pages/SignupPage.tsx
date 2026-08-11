@@ -6,7 +6,8 @@ import type { ApiError } from '../lib/api/client';
 import type { Gender } from '../lib/types';
 import { getTheme, setTheme } from '../lib/theme';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
-import { HINT_CLASSES, INPUT_CLASSES, LABEL_CLASSES } from '../lib/formClasses';
+import { HINT_CLASSES, INPUT_CLASSES, INPUT_ERROR_STYLE, LABEL_CLASSES } from '../lib/formClasses';
+import { isValidEmail } from '../lib/validation';
 
 type SignupErrorMessage = {
   title: string;
@@ -29,6 +30,7 @@ export default function SignupPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
   const [mobileNumber, setMobileNumber] = useState('');
   const [gender, setGender] = useState<Gender | ''>('');
   const [organizationName, setOrganizationName] = useState('');
@@ -61,6 +63,8 @@ export default function SignupPage() {
   });
 
   const errorMessage = deriveErrorMessage(signupMutation.error);
+  const emailIsValid = isValidEmail(email);
+  const showEmailError = emailTouched && email !== '' && !emailIsValid;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -181,9 +185,17 @@ export default function SignupPage() {
                 inputMode="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                onBlur={() => setEmailTouched(true)}
                 placeholder="you@company.com"
+                aria-invalid={showEmailError}
                 className={INPUT_CLASSES}
+                style={showEmailError ? INPUT_ERROR_STYLE : undefined}
               />
+              {showEmailError && (
+                <p className={`${HINT_CLASSES} text-state-down`}>
+                  Please enter a valid email address
+                </p>
+              )}
             </div>
 
             <div className="mb-4">
@@ -281,7 +293,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={signupMutation.isPending}
+              disabled={signupMutation.isPending || !emailIsValid}
               className="w-full rounded-md bg-brand px-4 py-3 text-sm font-medium text-brand-fg disabled:opacity-60"
             >
               {signupMutation.isPending ? 'Creating account…' : 'Create account'}

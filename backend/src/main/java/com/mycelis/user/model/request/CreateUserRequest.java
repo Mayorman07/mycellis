@@ -22,6 +22,10 @@ public record CreateUserRequest(
 
         @NotBlank(message = "Email cannot be empty")
         @Email(message = "Must be a well-formed email address")
+        @Pattern(
+                regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
+                message = "Must be a well-formed email address"
+        )
         @Size(max = 255, message = "Email must not exceed 255 characters")
         String email,
 

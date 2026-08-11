@@ -5,13 +5,15 @@ import { resendVerification } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
 import { getTheme, setTheme } from '../lib/theme';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
-import { INPUT_CLASSES, LABEL_CLASSES } from '../lib/formClasses';
+import { HINT_CLASSES, INPUT_CLASSES, INPUT_ERROR_STYLE, LABEL_CLASSES } from '../lib/formClasses';
+import { isValidEmail } from '../lib/validation';
 
 type ResendErrorMessage = { title: string };
 
 export default function ResendVerificationPage() {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(searchParams.get('email') ?? '');
+  const [emailTouched, setEmailTouched] = useState(false);
 
   // Same locked-cream, per-page mount/unmount pattern as the other auth pages.
   useEffect(() => {
@@ -31,6 +33,8 @@ export default function ResendVerificationPage() {
   });
 
   const errorMessage = deriveErrorMessage(resendMutation.error);
+  const emailIsValid = isValidEmail(email);
+  const showEmailError = emailTouched && email !== '' && !emailIsValid;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,14 +114,22 @@ export default function ResendVerificationPage() {
                     inputMode="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
+                    onBlur={() => setEmailTouched(true)}
                     placeholder="you@company.com"
+                    aria-invalid={showEmailError}
                     className={INPUT_CLASSES}
+                    style={showEmailError ? INPUT_ERROR_STYLE : undefined}
                   />
+                  {showEmailError && (
+                    <p className={`${HINT_CLASSES} text-state-down`}>
+                      Please enter a valid email address
+                    </p>
+                  )}
                 </div>
 
                 <button
                   type="submit"
-                  disabled={resendMutation.isPending}
+                  disabled={resendMutation.isPending || !emailIsValid}
                   aria-busy={resendMutation.isPending}
                   className="w-full rounded-md bg-brand px-4 py-3 text-sm font-medium text-brand-fg disabled:opacity-60"
                 >
