@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { useSession } from '../../lib/hooks/useSession';
 import type { PlanTier } from '../../lib/types';
@@ -12,8 +12,25 @@ type DashboardHeaderProps = {
 
 const NAV_TABS = ['Overview', 'Status pages', 'Settings'] as const;
 
+const ACTIVE_TAB_CLASSES = 'rounded-md bg-surface-raised px-3 py-1.5 text-sm font-semibold text-ink';
+const INACTIVE_TAB_CLASSES = 'rounded-md px-3 py-1.5 text-sm text-ink-subtle';
+
+const ACTIVE_MOBILE_TAB_CLASSES =
+  'flex items-center min-h-[44px] px-3 rounded-md text-sm bg-surface-raised font-semibold text-ink';
+const INACTIVE_MOBILE_TAB_CLASSES = 'flex items-center min-h-[44px] px-3 rounded-md text-sm text-ink-subtle';
+
+// "Status pages" intentionally has no active state — its href opens the
+// public status page in a new tab (see statusPagesHref below), so the
+// current tab's pathname never actually becomes that route.
+function isTabActive(tab: (typeof NAV_TABS)[number], pathname: string): boolean {
+  if (tab === 'Overview') return pathname === '/dashboard';
+  if (tab === 'Settings') return pathname.startsWith('/settings');
+  return false;
+}
+
 export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const session = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   // "See what customers see" — opens in a new tab rather than navigating the
@@ -23,6 +40,7 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
     ? `/status/${session.data.organization.slug}`
     : undefined;
   const isSuperAdmin = session.data?.user.roles.includes('SUPER_ADMIN') ?? false;
+  const isSuperAdminActive = location.pathname.startsWith('/super-admin');
 
   function closeMenu() {
     setIsMenuOpen(false);
@@ -49,28 +67,27 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
 
   return (
     <header className="border-b border-hairline bg-surface px-6 py-3 flex items-center justify-between gap-6">
-      <Link
-        to="/dashboard"
-        className="group flex items-center gap-2 -mx-2 -my-1 rounded-md px-2 py-1 transition-colors duration-200 ease-out hover:bg-[color-mix(in_srgb,var(--color-surface-raised)_60%,transparent)] focus-visible:outline-none focus-visible:[box-shadow:0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]"
-      >
-        <div className="w-8 h-8 rounded-md bg-brand text-brand-fg flex items-center justify-center font-display text-sm transition-transform duration-200 ease-out group-hover:scale-[1.02]">
-          {orgName.charAt(0).toUpperCase()}
-        </div>
-        <span className="font-display text-ink transition-colors duration-200 ease-out group-hover:underline group-hover:decoration-brand group-hover:decoration-1 group-hover:underline-offset-4">
-          {orgName}
-        </span>
+      <div className="group flex items-center gap-2 -mx-2 -my-1 rounded-md px-2 py-1 transition-colors duration-200 ease-out hover:bg-[color-mix(in_srgb,var(--color-surface-raised)_60%,transparent)]">
+        <Link
+          to="/dashboard"
+          className="flex items-center gap-2 focus-visible:outline-none focus-visible:[box-shadow:0_0_0_4px_color-mix(in_srgb,var(--color-brand)_20%,transparent)]"
+        >
+          <div className="w-8 h-8 rounded-md bg-brand text-brand-fg flex items-center justify-center font-display text-sm transition-transform duration-200 ease-out group-hover:scale-[1.02]">
+            {orgName.charAt(0).toUpperCase()}
+          </div>
+          <span className="font-display text-ink transition-colors duration-200 ease-out group-hover:underline group-hover:decoration-brand group-hover:decoration-1 group-hover:underline-offset-4">
+            {orgName}
+          </span>
+        </Link>
         <span className="font-mono uppercase text-[10px] tracking-wider text-ink-muted bg-accent rounded-full px-2 py-0.5">
           {planTier}
         </span>
         <ChevronIcon className="text-ink-subtle" />
-      </Link>
+      </div>
 
       <nav className="hidden lg:flex items-center gap-1">
         {NAV_TABS.map((tab) => {
-          const className =
-            tab === 'Overview'
-              ? 'rounded-md bg-surface-raised px-3 py-1.5 text-sm font-semibold text-ink'
-              : 'rounded-md px-3 py-1.5 text-sm text-ink-subtle';
+          const className = isTabActive(tab, location.pathname) ? ACTIVE_TAB_CLASSES : INACTIVE_TAB_CLASSES;
 
           if (tab === 'Status pages') {
             return (
@@ -96,7 +113,7 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
             <button
               key={tab}
               type="button"
-              onClick={tab === 'Settings' ? () => navigate('/settings') : undefined}
+              onClick={() => navigate(tab === 'Overview' ? '/dashboard' : '/settings')}
               className={className}
             >
               {tab}
@@ -107,7 +124,7 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
           <button
             type="button"
             onClick={() => navigate('/super-admin/organizations')}
-            className="rounded-md px-3 py-1.5 text-sm text-ink-subtle"
+            className={isSuperAdminActive ? ACTIVE_TAB_CLASSES : INACTIVE_TAB_CLASSES}
           >
             Super admin
           </button>
@@ -172,9 +189,9 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
 
           <nav className="flex flex-col p-2">
             {NAV_TABS.map((tab) => {
-              const className = `flex items-center min-h-[44px] px-3 rounded-md text-sm ${
-                tab === 'Overview' ? 'bg-surface-raised font-semibold text-ink' : 'text-ink-subtle'
-              }`;
+              const className = isTabActive(tab, location.pathname)
+                ? ACTIVE_MOBILE_TAB_CLASSES
+                : INACTIVE_MOBILE_TAB_CLASSES;
 
               if (tab === 'Status pages') {
                 return (
@@ -203,7 +220,7 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
                   key={tab}
                   type="button"
                   onClick={() => {
-                    if (tab === 'Settings') navigate('/settings');
+                    navigate(tab === 'Overview' ? '/dashboard' : '/settings');
                     closeMenu();
                   }}
                   className={className}
@@ -219,7 +236,7 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
                   navigate('/super-admin/organizations');
                   closeMenu();
                 }}
-                className="flex items-center min-h-[44px] px-3 rounded-md text-sm text-ink-subtle"
+                className={isSuperAdminActive ? ACTIVE_MOBILE_TAB_CLASSES : INACTIVE_MOBILE_TAB_CLASSES}
               >
                 Super admin
               </button>
