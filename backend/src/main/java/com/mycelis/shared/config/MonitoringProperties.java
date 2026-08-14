@@ -50,6 +50,17 @@ public class MonitoringProperties {
     private double degradedThreshold = 1.0;
 
     /**
+     * Minimum number of pulses a stalk must have recorded since its last
+     * activation before it can leave AWAKENING and receive a real
+     * HEALTHY/DEGRADED verdict. Counted from stalk.lastActivatedAt, not
+     * all-time — a stalk resumed from DORMANT re-enters AWAKENING and
+     * accumulates a fresh count rather than inheriting pre-pause history.
+     * Code-level default below so a missing property never breaks boot.
+     */
+    @Min(1)
+    private int awakeningPulseThreshold = 5;
+
+    /**
      * Latency threshold in milliseconds above which a healthy endpoint is marked STRESSED.
      * This is the STALK-AGGREGATE threshold — computed from a sliding-window average
      * across many pulses. Do not confuse with {@link #pulseStressedLatencyMs}, which

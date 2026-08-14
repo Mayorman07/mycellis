@@ -131,6 +131,16 @@ public class Stalk {
     @Builder.Default
     private Boolean isActive = true;
 
+    /**
+     * Timestamp of the most recent (re)activation. Equals {@link #createdAt}
+     * for a stalk that has never been paused/resumed — no pause/resume
+     * endpoint exists yet, so today this is always createdAt in practice.
+     * Scopes AWAKENING's pulse-count check to "since last activation"
+     * rather than all-time. See {@code StalkServiceImpl.evaluateReliability}.
+     */
+    @Column(name = "last_activated_at", nullable = false)
+    private Instant lastActivatedAt;
+
     /** Immutable registration timestamp (UTC) */
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

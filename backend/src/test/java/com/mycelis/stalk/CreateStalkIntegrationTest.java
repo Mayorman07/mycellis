@@ -45,7 +45,7 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.url").value("https://happy-path.example.test"))
                 .andExpect(jsonPath("$.isActive").value(true))
-                .andExpect(jsonPath("$.currentState").value("HEALTHY"));
+                .andExpect(jsonPath("$.currentState").value("DORMANT"));
     }
 
     @Test

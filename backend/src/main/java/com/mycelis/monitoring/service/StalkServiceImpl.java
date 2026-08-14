@@ -63,13 +63,14 @@ public class StalkServiceImpl implements StalkService {
                 .nickname(request.getNickname())
                 .growthIntervalSeconds(request.getGrowthIntervalSeconds())
                 .timeoutSeconds(request.getTimeoutSeconds())
-                .currentState(StalkState.HEALTHY)
-                .reliabilityState(ReliabilityState.HEALTHY)
+                .currentState(StalkState.DORMANT)
+                .reliabilityState(ReliabilityState.AWAKENING)
                 .latencyState(LatencyState.NORMAL)
                 .healthIndex(0.0)
                 .consecutiveFailures(0)
                 .isActive(true)
                 .nextCheckAt(Instant.now())
+                .lastActivatedAt(Instant.now())
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
@@ -157,11 +158,26 @@ public class StalkServiceImpl implements StalkService {
         Double avgLatency = pulseRepository.calculateAvgLatencyInWindow(stalkId, windowStart);
 
         double healthIndex = calculateHealthIndex(successCount, totalCount);
-        ReliabilityState reliability = evaluateReliability(healthIndex, totalCount);
-        LatencyState latency = evaluateLatency(avgLatency);
 
         Stalk stalk = stalkRepository.findById(stalkId)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + stalkId));
+
+        // AWAKENING is scoped to "since last activation", not all-time — a stalk
+        // resumed from DORMANT re-enters AWAKENING rather than inheriting its
+        // pre-pause pulse history. lastActivatedAt equals createdAt for a stalk
+        // that has never been paused, so this naturally covers both cases.
+        long pulsesSinceActivation = pulseRepository.countByStalkIdAndCreatedAtAfter(
+                stalkId, stalk.getLastActivatedAt());
+
+        ReliabilityState reliability = evaluateReliability(healthIndex, totalCount, pulsesSinceActivation);
+
+        // While AWAKENING, there isn't enough evidence to call latency either —
+        // same "insufficient data → NORMAL" reasoning evaluateLatency() already
+        // uses when avgLatency is null. Keeps the Stressed KPI from counting a
+        // stalk that hasn't earned a real verdict yet.
+        LatencyState latency = (reliability == ReliabilityState.AWAKENING)
+                ? LatencyState.NORMAL
+                : evaluateLatency(avgLatency);
 
         stalk.setHealthIndex(roundToTwoDecimals(healthIndex));
         stalk.setAverageLatencyMs(avgLatency != null ? Math.round(avgLatency) : 0L);
@@ -252,14 +268,24 @@ public class StalkServiceImpl implements StalkService {
     }
 
     /**
-     * Determines reliability state from success rate alone.
+     * Determines reliability state from success rate and pulse volume.
      * Independent of latency.
      *
+     * <p>AWAKENING takes priority over the health-index verdict — a stalk with
+     * fewer than {@code awakeningPulseThreshold} pulses since its last activation
+     * hasn't earned a real verdict yet, regardless of what its (statistically
+     * thin) health index says.</p>
+     *
      * <p>DORMANT is never set by metrics — it's only set by explicit user action.
-     * No-data case is guarded upstream; this method always returns HEALTHY or DEGRADED.</p>
+     * No-data case is guarded upstream; below the awakening threshold this method
+     * always returns AWAKENING, HEALTHY, or DEGRADED.</p>
      */
-    private ReliabilityState evaluateReliability(double healthIndex, long totalCount) {
+    private ReliabilityState evaluateReliability(double healthIndex, long totalCount, long pulsesSinceActivation) {
         validateHealthIndex(healthIndex);
+
+        if (pulsesSinceActivation < monitoringProperties.getAwakeningPulseThreshold()) {
+            return ReliabilityState.AWAKENING;
+        }
 
         if (totalCount == 0) {
             return ReliabilityState.DEGRADED;  // defensive; caller already guards
@@ -302,6 +328,10 @@ public class StalkServiceImpl implements StalkService {
     @Deprecated
     private StalkState deriveLegacyState(ReliabilityState reliability, LatencyState latency) {
         return switch (reliability) {
+            // StalkState (legacy) has no AWAKENING equivalent, and current_state's
+            // CHECK constraint only permits HEALTHY/STRESSED/DEGRADED/DORMANT — DORMANT
+            // is the closest fit ("not yet contributing a real verdict").
+            case AWAKENING -> StalkState.DORMANT;
             case DORMANT -> StalkState.DORMANT;
             // DOWN is per-pulse only (see ReliabilityState) — stalk-level metrics never
             // produce it, but the switch must stay exhaustive. StalkState has no DOWN
