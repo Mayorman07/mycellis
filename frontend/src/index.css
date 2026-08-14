@@ -135,6 +135,28 @@ body {
   }
 }
 
+/* Guide page's large background watermark flower — fixed to the viewport
+   corner for the whole scroll (the guide is six-plus sections, not one
+   screen), so this breathes slower and asymmetrically: the outward bloom
+   reaches further than it contracts, read as a bolder pulse outward rather
+   than a bigger wobble in both directions. !important on the reduced-motion
+   override below because the animation itself is set via inline style. */
+@keyframes mycellis-guide-watermark-breathe {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.09);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mycellis-guide-watermark {
+    animation: none !important;
+  }
+}
+
 /* Ambient network-graph nodes (auth pages) — each node sets
    --dot-base-opacity inline so they don't all breathe in sync. */
 @keyframes constellation-breath {

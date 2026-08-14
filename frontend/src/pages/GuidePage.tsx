@@ -27,6 +27,8 @@ export default function GuidePage() {
 
   return (
     <div className="min-h-screen bg-surface">
+      <GuideWatermark />
+
       <header className="border-b border-hairline bg-surface px-6 py-4">
         <div className="max-w-2xl mx-auto">
           <Link to="/" className="font-display text-xl text-ink tracking-tight">
@@ -242,6 +244,35 @@ function PullQuote({ children }: { children: ReactNode }) {
     <blockquote className="font-display italic text-ink-subtle text-[20px] md:text-[22px] leading-snug border-l-2 border-brand pl-4 my-6 md:my-8">
       {children}
     </blockquote>
+  );
+}
+
+// Large background watermark, fixed to the viewport corner so it stays put
+// for the whole scroll (this page is six-plus sections, not one screen).
+// Reuses the same petal geometry/colors as SectionDivider above, just much
+// bigger, translucent, and breathing. Scaled down (not hidden) below md —
+// same offset-to-size ratio as the desktop version so it still bleeds off
+// the corner proportionally, rather than disappearing on mobile.
+function GuideWatermark() {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      role="presentation"
+      aria-hidden="true"
+      className="mycellis-guide-watermark fixed -top-[24px] -right-[36px] w-[280px] h-[280px] md:-top-[60px] md:-right-[80px] md:w-[640px] md:h-[640px] -z-10 pointer-events-none"
+      style={{
+        animation: 'mycellis-guide-watermark-breathe 6s cubic-bezier(0.65, 0, 0.35, 1) infinite',
+      }}
+    >
+      <g opacity={0.16}>
+        {DIVIDER_PETAL_ANGLES.map((angle) => (
+          <g key={angle} transform={`rotate(${angle} 50 50)`}>
+            <path d={DIVIDER_PETAL_PATH} fill={DIVIDER_PETAL_COLOR} />
+          </g>
+        ))}
+        <circle cx="50" cy="50" r="8" fill={DIVIDER_CENTER_COLOR} />
+      </g>
+    </svg>
   );
 }
 
