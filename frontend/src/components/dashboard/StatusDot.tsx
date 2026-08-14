@@ -10,6 +10,7 @@ type StatusDotProps = {
 const DEFAULT_SIZE_PX = 10;
 
 const DOT_COLOR_CLASS: Record<ReliabilityState, string> = {
+  AWAKENING: 'text-state-awakening',
   HEALTHY: 'text-state-healthy',
   DEGRADED: 'text-state-stressed',
   DOWN: 'text-state-down',

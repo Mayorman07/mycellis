@@ -5,7 +5,11 @@ type KpiStripProps = {
 };
 
 function computeFleetUptime(stalks: Stalk[]): string {
-  const nonDormant = stalks.filter((s) => s.reliabilityState !== 'DORMANT');
+  // AWAKENING stalks haven't earned a real verdict yet — excluded from both
+  // sides of the ratio, same as backend evaluateReliability's treatment.
+  const nonDormant = stalks.filter(
+    (s) => s.reliabilityState !== 'DORMANT' && s.reliabilityState !== 'AWAKENING'
+  );
   if (nonDormant.length === 0) return '—';
   const healthy = nonDormant.filter((s) => s.reliabilityState === 'HEALTHY').length;
   return ((healthy / nonDormant.length) * 100).toFixed(1);

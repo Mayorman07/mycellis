@@ -28,6 +28,7 @@ export default {
         },
         accent: 'var(--color-accent)',
         state: {
+          awakening: 'var(--color-state-awakening)',
           healthy: 'var(--color-state-healthy)',
           stressed: 'var(--color-state-stressed)',
           down: 'var(--color-state-down)',

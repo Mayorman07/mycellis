@@ -5,6 +5,7 @@ type StatePillProps =
   | { variant: 'latency'; state: LatencyState };
 
 const COLOR_VAR: Record<ReliabilityState, string> = {
+  AWAKENING: '--color-state-awakening',
   HEALTHY: '--color-state-healthy',
   DEGRADED: '--color-state-stressed',
   DOWN: '--color-state-down',
@@ -12,6 +13,7 @@ const COLOR_VAR: Record<ReliabilityState, string> = {
 };
 
 const TEXT_CLASS: Record<ReliabilityState, string> = {
+  AWAKENING: 'text-state-awakening',
   HEALTHY: 'text-state-healthy',
   DEGRADED: 'text-state-stressed',
   DOWN: 'text-state-down',
@@ -19,6 +21,7 @@ const TEXT_CLASS: Record<ReliabilityState, string> = {
 };
 
 const DOT_CLASS: Record<ReliabilityState, string> = {
+  AWAKENING: 'bg-state-awakening',
   HEALTHY: 'bg-state-healthy',
   DEGRADED: 'bg-state-stressed',
   DOWN: 'bg-state-down',

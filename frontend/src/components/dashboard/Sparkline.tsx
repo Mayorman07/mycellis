@@ -12,6 +12,12 @@ const DEFAULT_SLOT_COUNT = 40;
 const MIN_BAR_HEIGHT = 4;
 
 const FILL_BY_STATE: Record<Pulse['reliabilityState'], string> = {
+  // Pulse-level reliabilityState is derived per-pulse by the backend's
+  // PulseMapper, which only ever emits HEALTHY/DEGRADED/DOWN — AWAKENING and
+  // DORMANT are stalk-aggregate-only and can't appear on a real Pulse. Both
+  // are still required here because Pulse shares the same ReliabilityState
+  // type as Stalk; these two entries are unreachable in practice.
+  AWAKENING: 'var(--color-state-awakening)',
   HEALTHY: 'var(--color-state-healthy)',
   DEGRADED: 'var(--color-state-stressed)',
   DOWN: 'var(--color-state-down)',

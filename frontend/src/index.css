@@ -31,6 +31,7 @@ html {
 
   --color-accent: rgba(30, 61, 46, 0.08);
 
+  --color-state-awakening: #3d72a4;
   --color-state-healthy: #3c8659;
   --color-state-stressed: #c98a2c;
   --color-state-down: #b8422e;
@@ -55,6 +56,7 @@ html {
 
   --color-accent: rgba(30, 61, 46, 0.06);
 
+  --color-state-awakening: #3d72a4;
   --color-state-healthy: #3c8659;
   --color-state-stressed: #c98a2c;
   --color-state-down: #b8422e;
@@ -79,6 +81,7 @@ html {
 
   --color-accent: rgba(168, 212, 168, 0.08);
 
+  --color-state-awakening: #7cb8e8;
   --color-state-healthy: #5eb87a;
   --color-state-stressed: #e0a748;
   --color-state-down: #e05d47;

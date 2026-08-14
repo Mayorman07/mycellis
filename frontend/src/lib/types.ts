@@ -94,7 +94,7 @@ export type ProblemDetail = {
 
 export type PlanTier = 'FREE' | 'PRO' | 'ENTERPRISE';
 
-export type ReliabilityState = 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'DORMANT';
+export type ReliabilityState = 'AWAKENING' | 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'DORMANT';
 
 export type LatencyState = 'NORMAL' | 'STRESSED';
 
