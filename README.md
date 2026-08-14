@@ -73,6 +73,35 @@ sequenceDiagram
     Frontend->>Backend: GET /api/stalks (cookie attached)
 ```
 
+### Backend internals
+
+The pulse tick and alert tick are two separate, independently-scheduled loops rather than one pipeline — the code frames this as deliberate: alerting only needs a 60-second cadence at beta scale, and decoupling it from the 5-second pulse tick keeps alert evaluation from ever slowing down the check cycle. Within a single tick, the claim phase (which takes row locks) and the dispatch phase (which makes outbound HTTP calls) are split into separate transactional boundaries specifically so locks are released before any network I/O begins. `PulseEngine` leans on JDK 21 virtual threads — one per check — to get high concurrency from ordinary blocking calls rather than needing a reactive stack. There's no external message queue anywhere in this flow; "async" here means Spring's in-process event bus plus two small bounded thread pools, not a broker.
+
+```mermaid
+flowchart TD
+    subgraph tick["Pulse tick — every 5s (StalkSchedulerService)"]
+        Claim["StalkClaimService<br/>SELECT FOR UPDATE, reschedule + jitter<br/>(own transaction, commits first)"]
+        Engine["PulseEngine<br/>one virtual thread per stalk<br/>blocking RestClient GET"]
+        Claim --> Engine
+    end
+
+    Engine -->|"publishes PulseCheckedEvent<br/>(in-process, no broker)"| Listener["PulsePersistenceListener<br/>@Async pulseExecutor pool<br/>10-50 threads"]
+    Listener -->|save| PulseTable[("pulses table")]
+    Listener -->|"updateMetricsAndTransitionState()"| StalkTable[("stalks table<br/>health index, state")]
+
+    subgraph alertTick["Alert tick — every 60s, independent (AlertEngine)"]
+        Eval["evaluateStalk()<br/>reads recent pulses directly<br/>per active stalk"]
+    end
+
+    PulseTable -.->|reads| Eval
+    Eval -->|"down 5+ min, or just recovered"| AlertTable[("alerts table<br/>suppression state")]
+    Eval -->|"if alertsEnabled"| AlertEvent["StalkDownEvent /<br/>StalkRecoveryEvent"]
+    AlertEvent --> NotifyListener["AlertNotificationListener<br/>@TransactionalEventListener<br/>AFTER_COMMIT"]
+    NotifyListener --> EmailSvc["EmailService<br/>Resend in prod"]
+
+    Dashboard["Dashboard<br/>GET /api/stalks"] -.->|polls| StalkTable
+```
+
 ## Local development — Backend
 
 Prerequisites: JDK 21, Docker (for local Postgres/MailHog). Maven itself isn't required — the repo ships a wrapper (`mvnw` / `mvnw.cmd`).
