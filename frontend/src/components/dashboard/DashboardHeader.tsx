@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
+import { CommandPalette } from './CommandPalette';
 import { useSession } from '../../lib/hooks/useSession';
+import { useDashboardData } from '../../lib/hooks/useDashboardData';
+import { isMacPlatform } from '../../lib/platform';
 import type { PlanTier } from '../../lib/types';
 
 type DashboardHeaderProps = {
@@ -32,7 +35,12 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
   const navigate = useNavigate();
   const location = useLocation();
   const session = useSession();
+  const { stalksQuery } = useDashboardData();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  // Pure sync read of navigator — no state/effect needed, it can't change
+  // during the component's lifetime.
+  const kbdLabel = isMacPlatform() ? '⌘K' : 'Ctrl K';
   // "See what customers see" — opens in a new tab rather than navigating the
   // dashboard away. undefined href until the session resolves; an <a> with
   // no href isn't clickable, which is the safe fallback for that window.
@@ -44,6 +52,11 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
 
   function closeMenu() {
     setIsMenuOpen(false);
+  }
+
+  function openPalette() {
+    closeMenu();
+    setIsPaletteOpen(true);
   }
 
   // ESC closes the drawer.
@@ -64,6 +77,22 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
       document.body.style.overflow = '';
     };
   }, [isMenuOpen]);
+
+  // Global Cmd+K / Ctrl+K opens the command palette from anywhere. Inlined
+  // rather than calling openPalette() so this effect has no external
+  // function dependency to track — setIsMenuOpen/setIsPaletteOpen are
+  // stable setters, so [] is genuinely correct here.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setIsMenuOpen(false);
+        setIsPaletteOpen(true);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <header className="border-b border-hairline bg-surface px-6 py-3 flex items-center justify-between gap-6">
@@ -135,11 +164,14 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
         <div className="relative">
           <input
             type="text"
+            readOnly
+            onClick={openPalette}
+            onFocus={openPalette}
             placeholder="Search or jump to..."
-            className="rounded-md border border-hairline bg-surface-raised pl-3 pr-12 py-1.5 text-sm text-ink placeholder:text-ink-subtle focus:outline-none"
+            className="rounded-md border border-hairline bg-surface-raised pl-3 pr-12 py-1.5 text-sm text-ink placeholder:text-ink-subtle focus:outline-none cursor-pointer"
           />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-ink-subtle">
-            ⌘K
+            {kbdLabel}
           </span>
         </div>
         <ThemeToggle />
@@ -257,11 +289,14 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
             <div className="relative mb-4">
               <input
                 type="text"
+                readOnly
+                onClick={openPalette}
+                onFocus={openPalette}
                 placeholder="Search or jump to..."
-                className="w-full rounded-md border border-hairline bg-surface-raised pl-3 pr-12 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus:outline-none"
+                className="w-full rounded-md border border-hairline bg-surface-raised pl-3 pr-12 py-2.5 text-sm text-ink placeholder:text-ink-subtle focus:outline-none cursor-pointer"
               />
               <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-ink-subtle">
-                ⌘K
+                {kbdLabel}
               </span>
             </div>
 
@@ -277,6 +312,14 @@ export function DashboardHeader({ orgName, planTier, userInitials }: DashboardHe
           </div>
         </div>
       </div>
+
+      {isPaletteOpen && (
+        <CommandPalette
+          onClose={() => setIsPaletteOpen(false)}
+          stalks={stalksQuery.data?.content}
+          isLoading={stalksQuery.isLoading}
+        />
+      )}
     </header>
   );
 }
