@@ -29,7 +29,7 @@ export default function GuidePage() {
     <div className="min-h-screen bg-surface">
       <GuideWatermark />
 
-      <header className="border-b border-hairline bg-surface px-6 py-4">
+      <header className="relative z-10 border-b border-hairline bg-surface px-6 py-4">
         <div className="max-w-2xl mx-auto">
           <Link to="/" className="font-display text-xl text-ink tracking-tight">
             MYCELLIS
@@ -37,7 +37,7 @@ export default function GuidePage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 py-16">
+      <main className="relative z-10 max-w-2xl mx-auto px-6 py-16">
         <section>
           <h1 className="font-display font-normal text-[46px] leading-tight tracking-tight text-ink mb-4">
             Welcome to Mycellis
@@ -259,7 +259,7 @@ function GuideWatermark() {
       viewBox="0 0 100 100"
       role="presentation"
       aria-hidden="true"
-      className="mycellis-guide-watermark fixed -top-[24px] -right-[36px] w-[280px] h-[280px] md:-top-[60px] md:-right-[80px] md:w-[640px] md:h-[640px] -z-10 pointer-events-none"
+      className="mycellis-guide-watermark fixed -top-[24px] -right-[36px] w-[280px] h-[280px] md:-top-[60px] md:-right-[80px] md:w-[640px] md:h-[640px] z-0 pointer-events-none"
       style={{
         animation: 'mycellis-guide-watermark-breathe 6s cubic-bezier(0.65, 0, 0.35, 1) infinite',
       }}
