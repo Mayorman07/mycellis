@@ -73,7 +73,10 @@ export default function GuidePage() {
             sends a pulse at the interval you choose and records how it responds.
           </p>
           <p className="text-ink-muted leading-[1.6]">
-            Healthy stalks breathe normally. Stressed stalks tell you something needs attention.
+            Newly planted stalks start out awakening, before Mycellis has enough pulses to know
+            for sure. Healthy stalks breathe normally. Degraded stalks are failing pulses more
+            often than they should — anywhere from occasional hiccups to being completely
+            unreachable. Stressed stalks are responding — just more slowly than usual.
           </p>
         </section>
 
