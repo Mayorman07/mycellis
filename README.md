@@ -18,6 +18,61 @@ Monorepo, two independently deployed apps:
 
 **Frontend:** Vite, React 19, Tailwind CSS 3, React Router 7, TanStack Query 5, deployed to Cloudflare Pages.
 
+## Architecture
+
+### System overview
+
+```mermaid
+flowchart LR
+    Browser["User's browser"] -->|HTTPS| Pages["Cloudflare Pages<br/>React SPA"]
+    Pages -->|"api.mycellis.dev<br/>cross-subdomain cookie auth"| Backend["Fly.io backend<br/>Spring Boot"]
+    Backend -->|SQL| Neon[("Neon Postgres<br/>Frankfurt")]
+    Backend -->|REST API| Resend["Resend<br/>transactional email"]
+    Robot["UptimeRobot"] -->|health check| Pages
+```
+
+### Pulse cycle
+
+A stalk (monitored endpoint) gets checked on its own schedule; this is one cycle.
+
+```mermaid
+sequenceDiagram
+    participant Scheduler as Backend scheduler
+    participant Backend
+    participant Endpoint as Monitored endpoint
+    participant DB as Postgres
+    participant Resend
+    participant Dashboard
+
+    Scheduler->>Backend: trigger pulse for stalk
+    Backend->>Endpoint: HTTP request
+    Endpoint-->>Backend: response / timeout
+    Backend->>DB: record pulse result
+    alt unhealthy
+        Backend->>Resend: queue alert email
+    end
+    Dashboard->>Backend: GET /api/stalks
+    Backend->>DB: read latest state
+    Backend-->>Dashboard: updated stalk state
+```
+
+### Auth flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend as React SPA (mycellis.dev)
+    participant Backend as Fly.io backend (api.mycellis.dev)
+
+    User->>Frontend: submits login form
+    Frontend->>Backend: POST /api/auth/login
+    Backend->>Backend: validate credentials, create session
+    Backend-->>Frontend: Set-Cookie JSESSIONID<br/>Domain=mycellis.dev, SameSite=Lax
+    Note over Frontend,Backend: cookie shared across mycellis.dev<br/>and api.mycellis.dev subdomains
+    Frontend->>Backend: GET /api/me (cookie attached)
+    Frontend->>Backend: GET /api/stalks (cookie attached)
+```
+
 ## Local development — Backend
 
 Prerequisites: JDK 21, Docker (for local Postgres/MailHog). Maven itself isn't required — the repo ships a wrapper (`mvnw` / `mvnw.cmd`).
@@ -76,5 +131,5 @@ See `backend/.env.example` and `frontend/.env.example` for the full list of vari
 
 - [`RUNBOOK.md`](./RUNBOOK.md) — incident response
 - [`COPYRIGHT.md`](./COPYRIGHT.md) — ownership and license terms
-- [`frontend/POST_LAUNCH_ROADMAP.md`](./frontend/POST_LAUNCH_ROADMAP.md) — planned post-launch work
+- [`POST_LAUNCH_ROADMAP.md`](./POST_LAUNCH_ROADMAP.md) — planned post-launch work
 - [`frontend/TECH_DEBT.md`](./frontend/TECH_DEBT.md) — known shortcuts and their payoff conditions
