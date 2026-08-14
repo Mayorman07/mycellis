@@ -193,6 +193,7 @@ export default function StalkDetailPage() {
             <div style={{ maxWidth: SPARKLINE_WIDTH_PX }}>
               <Sparkline
                 pulses={pulses}
+                reliabilityState={stalk.reliabilityState}
                 slotCount={PULSE_HISTORY_LIMIT}
                 barWidth={SPARKLINE_BAR_WIDTH}
                 gap={SPARKLINE_GAP}

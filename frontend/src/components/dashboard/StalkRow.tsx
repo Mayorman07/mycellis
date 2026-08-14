@@ -52,7 +52,7 @@ export function StalkRow({ stalk, pulses, onClick }: StalkRowProps) {
           <StatePill variant="latency" state={stalk.latencyState} />
         </div>
 
-        <Sparkline pulses={pulses} />
+        <Sparkline pulses={pulses} reliabilityState={stalk.reliabilityState} />
 
         <div className="font-mono text-sm text-ink">{latencyLabel}</div>
 
@@ -95,7 +95,7 @@ export function StalkRow({ stalk, pulses, onClick }: StalkRowProps) {
         <p className="text-sm text-ink-subtle truncate mt-1">{stalk.url}</p>
 
         <div className="w-full mt-3 [&>svg]:w-full [&>svg]:h-auto">
-          <Sparkline pulses={pulses} />
+          <Sparkline pulses={pulses} reliabilityState={stalk.reliabilityState} />
         </div>
 
         <div className="flex items-center gap-6 mt-3">

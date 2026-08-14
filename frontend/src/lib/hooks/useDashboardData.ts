@@ -4,7 +4,7 @@ import { getBatchPulses } from '../api/pulses';
 import type { ApiError } from '../api/client';
 import type { BatchPulsesResponse, PageResponse, Stalk } from '../types';
 
-const REFETCH_INTERVAL_MS = 15_000;
+const REFETCH_INTERVAL_MS = 10_000;
 const PULSES_PER_STALK = 40;
 
 export function useDashboardData(): {
@@ -15,6 +15,9 @@ export function useDashboardData(): {
     queryKey: ['stalks'],
     queryFn: () => listStalks(),
     refetchInterval: REFETCH_INTERVAL_MS,
+    // Pauses polling when the tab isn't focused — no point burning requests
+    // on a dashboard nobody's looking at.
+    refetchIntervalInBackground: false,
   });
 
   const stalkIds = stalksQuery.data?.content.map((s) => s.id) ?? [];
@@ -26,6 +29,7 @@ export function useDashboardData(): {
     queryFn: () => getBatchPulses(sortedStalkIds, PULSES_PER_STALK),
     enabled: sortedStalkIds.length > 0,
     refetchInterval: REFETCH_INTERVAL_MS,
+    refetchIntervalInBackground: false,
   });
 
   return { stalksQuery, pulsesQuery };
