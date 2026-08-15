@@ -1,0 +1,15 @@
+<svg width="1200" height="300" viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mycellis">
+  <rect x="0.75" y="0.75" width="1198.5" height="298.5" rx="24" fill="#efe6d0" stroke="#d9ceb5" stroke-width="1.5"/>
+
+  <g transform="translate(160,150) scale(1.9) translate(-50,-50)">
+    <g transform="rotate(0 50 50)"><path d="M 50,47 C 59,42 59,26 55,17 C 53,12.5 47,12.5 45,17 C 41,26 41,42 50,47 Z" fill="#eccb52"/></g>
+    <g transform="rotate(72 50 50)"><path d="M 50,47 C 59,42 59,26 55,17 C 53,12.5 47,12.5 45,17 C 41,26 41,42 50,47 Z" fill="#eccb52"/></g>
+    <g transform="rotate(144 50 50)"><path d="M 50,47 C 59,42 59,26 55,17 C 53,12.5 47,12.5 45,17 C 41,26 41,42 50,47 Z" fill="#eccb52"/></g>
+    <g transform="rotate(216 50 50)"><path d="M 50,47 C 59,42 59,26 55,17 C 53,12.5 47,12.5 45,17 C 41,26 41,42 50,47 Z" fill="#eccb52"/></g>
+    <g transform="rotate(288 50 50)"><path d="M 50,47 C 59,42 59,26 55,17 C 53,12.5 47,12.5 45,17 C 41,26 41,42 50,47 Z" fill="#eccb52"/></g>
+    <circle cx="50" cy="50" r="8" fill="#1c4d3a"/>
+  </g>
+
+  <text x="320" y="168" font-family="Fraunces, Georgia, serif" font-size="64" fill="#0f1e15" letter-spacing="0.5">MYCELLIS</text>
+  <text x="322" y="204" font-family="'JetBrains Mono', monospace" font-size="18" letter-spacing="2" fill="#4a5a4d">REAL-TIME MONITORING, BREATHING IN SYNC</text>
+</svg>
