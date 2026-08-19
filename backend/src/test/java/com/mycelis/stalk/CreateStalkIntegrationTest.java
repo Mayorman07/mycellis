@@ -20,11 +20,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Happy-path + validation-boundary coverage for stalk creation.
  *
  * <p>CreateStalkRequest.url only carries @NotBlank/@Size(max=2048) — there is
- * no URL-format validator anywhere in the codebase, so "invalid URL rejected"
- * is tested here as a blank url (the actual validation that exists), not a
- * malformed-but-non-blank string like "not-a-url" (which the API accepts as
- * written today; that's a real gap, flagged in the commit report, not one
- * this test suite silently papers over).</p>
+ * no URL-*format* validator (malformed-but-non-blank strings like "not-a-url"
+ * still reach the service layer), so "invalid URL rejected" is tested here as
+ * a blank url. SafeUrlValidator, exercised below via the private-URL test,
+ * covers a different concern — URLs that are syntactically fine but resolve
+ * to an internal/private network target.</p>
  *
  * <p>The timeout ceiling task-described as "> 30 rejected" comes from
  * MonitoringProperties.maxCycleDuration (mycelis.monitoring.max-cycle-duration
@@ -40,10 +40,10 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(post("/api/stalks")
                         .session(session)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRequest("https://happy-path.example.test"))))
+                        .content(objectMapper.writeValueAsString(validRequest("https://example.com/happy-path"))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNotEmpty())
-                .andExpect(jsonPath("$.url").value("https://happy-path.example.test"))
+                .andExpect(jsonPath("$.url").value("https://example.com/happy-path"))
                 .andExpect(jsonPath("$.isActive").value(true))
                 .andExpect(jsonPath("$.currentState").value("DORMANT"));
     }
@@ -51,7 +51,7 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
     @Test
     void listStalksIncludesTheNewStalk() throws Exception {
         MockHttpSession session = login(createVerifiedUser("create-list"));
-        UUID stalkId = createStalk(session, validRequest("https://list-check.example.test"));
+        UUID stalkId = createStalk(session, validRequest("https://example.com/list-check"));
 
         MvcResult result = mockMvc.perform(get("/api/stalks").session(session))
                 .andExpect(status().isOk())
@@ -63,7 +63,7 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
     @Test
     void getStalkByIdReturnsCorrectFields() throws Exception {
         MockHttpSession session = login(createVerifiedUser("create-get"));
-        CreateStalkRequest request = validRequest("https://field-check.example.test");
+        CreateStalkRequest request = validRequest("https://example.com/field-check");
         request.setNickname("Field Check");
         request.setGrowthIntervalSeconds(120);
         request.setTimeoutSeconds(15);
@@ -72,7 +72,7 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
 
         mockMvc.perform(get("/api/stalks/{id}", stalkId).session(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.url").value("https://field-check.example.test"))
+                .andExpect(jsonPath("$.url").value("https://example.com/field-check"))
                 .andExpect(jsonPath("$.nickname").value("Field Check"))
                 .andExpect(jsonPath("$.growthIntervalSeconds").value(120))
                 .andExpect(jsonPath("$.timeoutSeconds").value(15))
@@ -116,6 +116,19 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").isNotEmpty());
+    }
+
+    @Test
+    void privateUrlIsRejectedWithUnsafeUrlProblemDetail() throws Exception {
+        MockHttpSession session = login(createVerifiedUser("create-unsafe-url"));
+
+        mockMvc.perform(post("/api/stalks")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest("http://127.0.0.1"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("URLs pointing to internal addresses are not allowed"))
+                .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/unsafe-url"));
     }
 
     private CreateStalkRequest validRequest(String url) {

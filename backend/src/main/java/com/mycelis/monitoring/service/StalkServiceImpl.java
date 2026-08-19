@@ -7,6 +7,8 @@ import com.mycelis.monitoring.constant.StalkState;
 import com.mycelis.monitoring.entity.Pulse;
 import com.mycelis.monitoring.entity.Stalk;
 import com.mycelis.shared.exception.TenantAccessException;
+import com.mycelis.monitoring.security.SafeUrlValidator;
+import com.mycelis.monitoring.security.UnsafeUrlException;
 import com.mycelis.monitoring.dto.requests.CreateStalkRequest;
 import com.mycelis.monitoring.dto.responses.BatchPulsesResponse;
 import com.mycelis.monitoring.dto.responses.PulseResponse;
@@ -50,12 +52,14 @@ public class StalkServiceImpl implements StalkService {
     private final PulseRepository pulseRepository;
     private final MonitoringProperties monitoringProperties;
     private final PulseMapper pulseMapper;
+    private final SafeUrlValidator safeUrlValidator;
 
     @Override
     @Transactional
     @SuppressWarnings("deprecation")
     public StalkResponse createStalk(UUID organizationId, UUID createdByUserId, CreateStalkRequest request) {
         validateTimeoutAgainstCycle(request.getTimeoutSeconds());
+        validateUrlIsSafe(request.getUrl());
         Stalk stalk = Stalk.builder()
                 .organizationId(organizationId)
                 .createdByUserId(createdByUserId)
@@ -103,6 +107,7 @@ public class StalkServiceImpl implements StalkService {
     @Transactional
     public StalkResponse updateConfiguration(UUID organizationId, UUID id, CreateStalkRequest request) {
         validateTimeoutAgainstCycle(request.getTimeoutSeconds());
+        validateUrlIsSafe(request.getUrl());
         Stalk stalk = stalkRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
@@ -396,6 +401,19 @@ public class StalkServiceImpl implements StalkService {
                     "timeoutSeconds (%d) exceeds the system maximum of %d seconds. " +
                             "This is bounded by the scheduler's maxCycleDuration.",
                     requestedTimeoutSeconds, maxAllowed));
+        }
+    }
+
+    /**
+     * Rejects with a fixed, user-facing message regardless of the specific
+     * blocklist reason SafeUrlValidator returns internally — callers get a
+     * uniform "not allowed" response rather than a hint about which internal
+     * check tripped.
+     */
+    private void validateUrlIsSafe(String url) {
+        SafeUrlValidator.Result result = safeUrlValidator.validate(url);
+        if (!result.allowed()) {
+            throw new UnsafeUrlException("URLs pointing to internal addresses are not allowed");
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.mycelis.shared.exception;
 
+import com.mycelis.monitoring.security.UnsafeUrlException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -174,6 +175,16 @@ public class GlobalExceptionHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
         pd.setTitle("Tenant Access Denied");
         pd.setType(URI.create(BASE_URI + "tenant-access-denied"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    @ExceptionHandler(UnsafeUrlException.class)
+    public ProblemDetail handleUnsafeUrl(UnsafeUrlException ex) {
+        log.warn("Unsafe URL rejected: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        pd.setTitle("Unsafe URL");
+        pd.setType(URI.create(BASE_URI + "unsafe-url"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }

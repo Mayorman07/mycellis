@@ -34,7 +34,7 @@ class TenantIsolationIntegrationTest extends IntegrationTestBase {
     void userBCannotGetUserAsStalkById() throws Exception {
         MockHttpSession sessionA = login(createVerifiedUser("tenant-a-get"));
         MockHttpSession sessionB = login(createVerifiedUser("tenant-b-get"));
-        UUID stalkId = createStalk(sessionA, validRequest("https://tenant-a-get.example.test"));
+        UUID stalkId = createStalk(sessionA, validRequest("https://example.com/tenant-a-get"));
 
         mockMvc.perform(get("/api/stalks/{id}", stalkId).session(sessionB))
                 .andExpect(status().isForbidden())
@@ -45,7 +45,7 @@ class TenantIsolationIntegrationTest extends IntegrationTestBase {
     void userBsStalkListDoesNotIncludeUserAsStalk() throws Exception {
         MockHttpSession sessionA = login(createVerifiedUser("tenant-a-list"));
         MockHttpSession sessionB = login(createVerifiedUser("tenant-b-list"));
-        UUID stalkId = createStalk(sessionA, validRequest("https://tenant-a-list.example.test"));
+        UUID stalkId = createStalk(sessionA, validRequest("https://example.com/tenant-a-list"));
 
         MvcResult result = mockMvc.perform(get("/api/stalks").session(sessionB))
                 .andExpect(status().isOk())
@@ -59,12 +59,12 @@ class TenantIsolationIntegrationTest extends IntegrationTestBase {
     void userBCannotUpdateUserAsStalk() throws Exception {
         MockHttpSession sessionA = login(createVerifiedUser("tenant-a-put"));
         MockHttpSession sessionB = login(createVerifiedUser("tenant-b-put"));
-        UUID stalkId = createStalk(sessionA, validRequest("https://tenant-a-put.example.test"));
+        UUID stalkId = createStalk(sessionA, validRequest("https://example.com/tenant-a-put"));
 
         mockMvc.perform(put("/api/stalks/{id}", stalkId)
                         .session(sessionB)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRequest("https://hijacked.example.test"))))
+                        .content(objectMapper.writeValueAsString(validRequest("https://example.com/hijacked"))))
                 .andExpect(status().isForbidden());
     }
 
@@ -72,7 +72,7 @@ class TenantIsolationIntegrationTest extends IntegrationTestBase {
     void userBCannotDeleteUserAsStalk() throws Exception {
         MockHttpSession sessionA = login(createVerifiedUser("tenant-a-delete"));
         MockHttpSession sessionB = login(createVerifiedUser("tenant-b-delete"));
-        UUID stalkId = createStalk(sessionA, validRequest("https://tenant-a-delete.example.test"));
+        UUID stalkId = createStalk(sessionA, validRequest("https://example.com/tenant-a-delete"));
 
         mockMvc.perform(delete("/api/stalks/{id}", stalkId).session(sessionB))
                 .andExpect(status().isForbidden());
@@ -82,7 +82,7 @@ class TenantIsolationIntegrationTest extends IntegrationTestBase {
     void userBCannotFetchUserAsPulses() throws Exception {
         MockHttpSession sessionA = login(createVerifiedUser("tenant-a-pulses"));
         MockHttpSession sessionB = login(createVerifiedUser("tenant-b-pulses"));
-        UUID stalkId = createStalk(sessionA, validRequest("https://tenant-a-pulses.example.test"));
+        UUID stalkId = createStalk(sessionA, validRequest("https://example.com/tenant-a-pulses"));
 
         mockMvc.perform(get("/api/stalks/{stalkId}/pulses", stalkId).session(sessionB))
                 .andExpect(status().isForbidden());

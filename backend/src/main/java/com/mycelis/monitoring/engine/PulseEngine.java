@@ -1,6 +1,7 @@
 package com.mycelis.monitoring.engine;
 
 import com.mycelis.shared.config.MonitoringProperties;
+import com.mycelis.monitoring.security.SafeUrlValidator;
 import com.mycelis.monitoring.entity.Stalk;
 import com.mycelis.monitoring.event.PulseCheckedEvent;
 import io.micrometer.core.instrument.Counter;
@@ -59,6 +60,7 @@ public class PulseEngine {
     private final MonitoringProperties monitoringProperties;
     private final MeterRegistry meterRegistry;
     private final ApplicationEventPublisher eventPublisher;
+    private final SafeUrlValidator safeUrlValidator;
 
     private static final int MAX_CLIENT_CACHE_SIZE = 50;
 
@@ -77,10 +79,12 @@ public class PulseEngine {
 
     public PulseEngine(MonitoringProperties monitoringProperties,
                        MeterRegistry meterRegistry,
-                       ApplicationEventPublisher eventPublisher) {
+                       ApplicationEventPublisher eventPublisher,
+                       SafeUrlValidator safeUrlValidator) {
         this.monitoringProperties = monitoringProperties;
         this.meterRegistry = meterRegistry;
         this.eventPublisher = eventPublisher;
+        this.safeUrlValidator = safeUrlValidator;
 
         this.cycleSuccessCounter = Counter.builder("app.engine.cycle.success")
                 .description("Number of successful health checks per cycle")
@@ -193,6 +197,27 @@ public class PulseEngine {
         int timeoutSeconds = stalk.getTimeoutSeconds();
 
         log.debug("Checking stalk {}: {}", stalk.getId(), url);
+
+        // Defense in depth — StalkServiceImpl already validates at create/update
+        // time, but a stalk could still reach here with an unsafe URL via direct
+        // DB write or data migration. Never crash the executor for this; record
+        // it as a failed pulse like any other check failure.
+        SafeUrlValidator.Result urlCheck = safeUrlValidator.validate(url);
+        if (!urlCheck.allowed()) {
+            long latencyMs = Duration.between(requestStart, Instant.now()).toMillis();
+            String errorMessage = "UNSAFE_URL: " + urlCheck.reason();
+
+            publishPulseCheckedEvent(stalk, 0, latencyMs, false, errorMessage);
+
+            log.warn("Refusing to check stalk {}: unsafe URL target ({})", stalk.getId(), urlCheck.reason());
+
+            sample.stop(Timer.builder("app.engine.check.duration")
+                    .tag("result", "unsafe_url")
+                    .tag("error_type", "unsafe_url")
+                    .tag("url_hash", hashUrl(url))
+                    .register(meterRegistry));
+            return;
+        }
 
         try {
             RestClient client = getClientForTimeout(timeoutSeconds);
