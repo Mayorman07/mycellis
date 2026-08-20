@@ -131,6 +131,22 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/unsafe-url"));
     }
 
+    @Test
+    void duplicateUrlIsRejectedWithConflict() throws Exception {
+        MockHttpSession session = login(createVerifiedUser("dup-url-create"));
+        createStalk(session, validRequest("https://example.com/dup-check"));
+
+        // Different case + explicit default port — proves normalization is
+        // actually applied, not a literal string match.
+        mockMvc.perform(post("/api/stalks")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest("HTTPS://EXAMPLE.COM:443/dup-check"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("A stalk with this URL already exists in your organization"))
+                .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/duplicate-url"));
+    }
+
     private CreateStalkRequest validRequest(String url) {
         CreateStalkRequest request = new CreateStalkRequest();
         request.setUrl(url);

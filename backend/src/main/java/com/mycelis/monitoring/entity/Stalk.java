@@ -53,6 +53,15 @@ public class Stalk {
     @Column(name = "url", length = 2048, nullable = false)
     private String url;
 
+    /**
+     * Canonical form of {@link #url} used for duplicate detection — see
+     * {@link com.mycelis.monitoring.service.UrlNormalizer}. Not shown to
+     * users; {@link #url} remains the source of truth for display and the
+     * actual outbound pulse request.
+     */
+    @Column(name = "normalized_url", length = 2048, nullable = false)
+    private String normalizedUrl;
+
     /** User-defined alias for dashboard readability and reporting */
     @Column(name = "nickname", length = 255)
     private String nickname;

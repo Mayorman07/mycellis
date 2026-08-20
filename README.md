@@ -226,4 +226,4 @@ See `backend/.env.example` and `frontend/.env.example` for the full list of vari
 | [`RUNBOOK.md`](./RUNBOOK.md) | Incident response |
 | [`COPYRIGHT.md`](./COPYRIGHT.md) | Ownership and license terms |
 | [`POST_LAUNCH_ROADMAP.md`](./POST_LAUNCH_ROADMAP.md) | Planned post-launch work |
-| [`frontend/TECH_DEBT.md`](./frontend/TECH_DEBT.md) | Known shortcuts and their payoff conditions |
+| [`TECH_DEBT.md`](./TECH_DEBT.md) | Known shortcuts and their payoff conditions |

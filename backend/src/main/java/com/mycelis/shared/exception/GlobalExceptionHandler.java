@@ -179,6 +179,16 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(DuplicateStalkUrlException.class)
+    public ProblemDetail handleDuplicateStalkUrl(DuplicateStalkUrlException ex) {
+        log.warn("Duplicate stalk URL rejected: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        pd.setTitle("Duplicate Stalk URL");
+        pd.setType(URI.create(BASE_URI + "duplicate-url"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
     @ExceptionHandler(UnsafeUrlException.class)
     public ProblemDetail handleUnsafeUrl(UnsafeUrlException ex) {
         log.warn("Unsafe URL rejected: {}", ex.getMessage());

@@ -1,0 +1,110 @@
+\# TECH\_DEBT.md
+
+
+
+\## Post-launch refactors
+
+
+
+\- \*\*StalkTable/StalkRow dual-mount pattern:\*\* Currently renders each stalk 
+
+&#x20; twice in DOM (desktop table row + mobile card) with `hidden md:block` / 
+
+&#x20; `md:hidden`. Fine for < 100 stalks per org. Refactor to single-mount when 
+
+&#x20; we add row selection, dropdowns per row, inline editing, or virtualization.
+
+&#x20; Options: useMediaQuery + hydration-safe fallback, react-responsive, or 
+
+&#x20; headless table lib (@tanstack/react-table).
+
+
+
+\- \*\*DashboardHeader "Overview" tab:\*\* hardcoded active, doesn't navigate. 
+
+&#x20; Fix to actually route to /dashboard and use useLocation for active state.
+
+
+
+\- \*\*Desktop StalkRow keyboard operability:\*\* currently click-only. Add 
+
+&#x20; role="button", tabIndex, keyboard handler for consistency with mobile 
+
+&#x20; card. Post-launch a11y polish.
+
+
+
+\- \*\*`mycelis.io` typo:\*\* Every backend error response has 
+
+&#x20; `"type":"https://mycelis.io/errors/..."` — single L. Fix in 
+
+&#x20; application-prod.properties or wherever the problem-detail URI base 
+
+&#x20; is configured.
+
+
+
+\- \*\*Two-machine deploy:\*\* Currently on `fly scale count 1` due to in-memory 
+
+&#x20; session store. Add Spring Session + Upstash Redis to enable multi-machine 
+
+&#x20; scaling. Free tier of Upstash on Fly Redis is sufficient.
+
+
+
+\- \*\*Rotate admin password:\*\* olajidemayorwa@gmail.com password was 
+
+&#x20; compromised during launch debugging session (Aug 8, 2026). Change 
+
+&#x20; via app UI, and update MYCELIS\_ADMIN\_PASSWORD Fly secret.
+
+
+
+\- \*\*SlugGenerator can produce slugs exceeding organizations.slug VARCHAR(60) 
+
+&#x20; — 500 error on signup with long org names:\*\* `generateUniqueSlug()` in 
+
+&#x20; `OrganizationServiceImpl` slugifies the org name with no length cap before 
+
+&#x20; inserting into `organizations.slug`, which is `VARCHAR(60)`. Signup with a 
+
+&#x20; long enough org name throws `DataIntegrityViolationException` → 500 on 
+
+&#x20; `/api/auth/verify` (org row insert happens during verification, not 
+
+&#x20; signup itself). Found while writing Phase 3 PR #1 tests: org name is 
+
+&#x20; built as `"Org " + label + " " + <UUID>` — a 20-char label alone produces 
+
+&#x20; `4 + 20 + 1 + 36 = 61` characters, one over the 60-char column limit, and 
+
+&#x20; the slug tracks that length. Fix: truncate the slugified base to ~55 
+
+&#x20; characters in `generateUniqueSlug()` before appending the uniqueness 
+
+&#x20; suffix. Not a launch blocker on its own, but a real prod bug — fires for 
+
+&#x20; any real user who signs up with a sufficiently long org name. Fix before 
+
+&#x20; public launch.
+
+
+
+\- \*\*V10 leftover — rename idx\_stalks\_user\_id to 
+
+&#x20; idx\_stalks\_created\_by\_user\_id:\*\* V1 created 
+
+&#x20; `idx_stalks_user_id ON stalks(user_id)`. V10 renamed the column 
+
+&#x20; `user_id` → `created_by_user_id` but did not rename the index — Postgres 
+
+&#x20; doesn't auto-rename indexes on `ALTER TABLE ... RENAME COLUMN`. The index 
+
+&#x20; still exists and functions correctly (it indexes the renamed column just 
+
+&#x20; fine), just with a misleading name. No functional impact. Fix: single 
+
+&#x20; migration, `ALTER INDEX idx_stalks_user_id RENAME TO 
+
+&#x20; idx_stalks_created_by_user_id;`. Priority: low — cleanup, not correctness.
+

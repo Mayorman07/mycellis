@@ -7,6 +7,7 @@ import com.mycelis.monitoring.constant.StalkState;
 import com.mycelis.monitoring.entity.Pulse;
 import com.mycelis.monitoring.entity.Stalk;
 import com.mycelis.shared.exception.TenantAccessException;
+import com.mycelis.shared.exception.DuplicateStalkUrlException;
 import com.mycelis.monitoring.security.SafeUrlValidator;
 import com.mycelis.monitoring.security.UnsafeUrlException;
 import com.mycelis.monitoring.dto.requests.CreateStalkRequest;
@@ -53,6 +54,7 @@ public class StalkServiceImpl implements StalkService {
     private final MonitoringProperties monitoringProperties;
     private final PulseMapper pulseMapper;
     private final SafeUrlValidator safeUrlValidator;
+    private final UrlNormalizer urlNormalizer;
 
     @Override
     @Transactional
@@ -60,10 +62,14 @@ public class StalkServiceImpl implements StalkService {
     public StalkResponse createStalk(UUID organizationId, UUID createdByUserId, CreateStalkRequest request) {
         validateTimeoutAgainstCycle(request.getTimeoutSeconds());
         validateUrlIsSafe(request.getUrl());
+        String normalizedUrl = urlNormalizer.normalize(request.getUrl());
+        checkNotDuplicate(organizationId, normalizedUrl, null);
+
         Stalk stalk = Stalk.builder()
                 .organizationId(organizationId)
                 .createdByUserId(createdByUserId)
                 .url(request.getUrl())
+                .normalizedUrl(normalizedUrl)
                 .nickname(request.getNickname())
                 .growthIntervalSeconds(request.getGrowthIntervalSeconds())
                 .timeoutSeconds(request.getTimeoutSeconds())
@@ -108,6 +114,9 @@ public class StalkServiceImpl implements StalkService {
     public StalkResponse updateConfiguration(UUID organizationId, UUID id, CreateStalkRequest request) {
         validateTimeoutAgainstCycle(request.getTimeoutSeconds());
         validateUrlIsSafe(request.getUrl());
+        String normalizedUrl = urlNormalizer.normalize(request.getUrl());
+        checkNotDuplicate(organizationId, normalizedUrl, id);
+
         Stalk stalk = stalkRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
 
@@ -117,6 +126,7 @@ public class StalkServiceImpl implements StalkService {
         }
 
         stalk.setUrl(request.getUrl());
+        stalk.setNormalizedUrl(normalizedUrl);
         stalk.setNickname(request.getNickname());
         stalk.setGrowthIntervalSeconds(request.getGrowthIntervalSeconds());
         stalk.setTimeoutSeconds(request.getTimeoutSeconds());
@@ -414,6 +424,20 @@ public class StalkServiceImpl implements StalkService {
         SafeUrlValidator.Result result = safeUrlValidator.validate(url);
         if (!result.allowed()) {
             throw new UnsafeUrlException("URLs pointing to internal addresses are not allowed");
+        }
+    }
+
+    /**
+     * @param excludeStalkId null on create (nothing to exclude); the stalk's own
+     *                       id on update (so re-saving its own unchanged URL isn't
+     *                       flagged as a collision with itself).
+     */
+    private void checkNotDuplicate(UUID organizationId, String normalizedUrl, UUID excludeStalkId) {
+        boolean duplicate = (excludeStalkId == null)
+                ? stalkRepository.existsByOrganizationIdAndNormalizedUrl(organizationId, normalizedUrl)
+                : stalkRepository.existsByOrganizationIdAndNormalizedUrlAndIdNot(organizationId, normalizedUrl, excludeStalkId);
+        if (duplicate) {
+            throw new DuplicateStalkUrlException("A stalk with this URL already exists in your organization");
         }
     }
 }

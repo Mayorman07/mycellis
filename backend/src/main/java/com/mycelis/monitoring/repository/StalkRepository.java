@@ -101,4 +101,14 @@ public interface StalkRepository extends JpaRepository<Stalk, UUID> {
 
     /** Active stalks to evaluate for alertable state transitions. */
     List<Stalk> findByIsActiveTrue();
+
+    /** Duplicate check on create — is this (org, normalized URL) pair already taken? */
+    boolean existsByOrganizationIdAndNormalizedUrl(UUID organizationId, String normalizedUrl);
+
+    /**
+     * Duplicate check on update — same as above, but excludes the stalk being
+     * updated itself, so re-saving a stalk with its own unchanged URL isn't
+     * flagged as colliding with itself.
+     */
+    boolean existsByOrganizationIdAndNormalizedUrlAndIdNot(UUID organizationId, String normalizedUrl, UUID id);
 }
