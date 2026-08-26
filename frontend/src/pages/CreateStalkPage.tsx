@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createStalk } from '../lib/api/stalks';
 import type { ApiError } from '../lib/api/client';
+import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { StalkForm } from '../components/stalks/StalkForm';
 
 type CreateStalkErrorMessage = { title: string };
@@ -67,8 +68,8 @@ function deriveErrorMessage(error: ApiError | null): CreateStalkErrorMessage | n
   }
 
   if (error.status === 400) {
-    return { title: error.detail || 'Please check your inputs and try again.' };
+    return { title: getApiErrorMessage(error, 'Please check your inputs and try again.') };
   }
 
-  return { title: 'Something went wrong. Please try again.' };
+  return { title: getApiErrorMessage(error) };
 }

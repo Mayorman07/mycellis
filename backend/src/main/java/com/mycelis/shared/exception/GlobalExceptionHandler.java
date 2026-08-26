@@ -172,7 +172,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TenantAccessException.class)
     public ProblemDetail handleTenantAccess(TenantAccessException ex) {
         log.warn("Tenant access violation: {}", ex.getMessage());
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        // ex.getMessage() carries the specific stalk/org ids for the log line
+        // above, but never reaches the response body — a cross-tenant access
+        // attempt should look like "doesn't exist" to the caller, not confirm
+        // the resource is real but owned by someone else. Same reasoning as
+        // handleAccessDenied's hardcoded message below.
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Resource not found");
         pd.setTitle("Tenant Access Denied");
         pd.setType(URI.create(BASE_URI + "tenant-access-denied"));
         pd.setProperty("timestamp", Instant.now());

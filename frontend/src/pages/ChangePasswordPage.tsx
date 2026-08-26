@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { changePassword } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
+import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { HINT_CLASSES, INPUT_CLASSES, LABEL_CLASSES } from '../lib/formClasses';
 
 type ChangePasswordErrorMessage = { title: string };
@@ -216,10 +217,10 @@ function deriveErrorMessage(error: ApiError | null): ChangePasswordErrorMessage 
   }
 
   if (error.status === 400) {
-    return { title: error.detail || 'Please check your password and try again.' };
+    return { title: getApiErrorMessage(error, 'Please check your password and try again.') };
   }
 
-  return { title: 'Something went wrong. Please try again.' };
+  return { title: getApiErrorMessage(error) };
 }
 
 function EyeIcon() {

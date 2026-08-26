@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { resetPassword } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
+import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { getTheme, setTheme } from '../lib/theme';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
 import { HINT_CLASSES, INPUT_CLASSES, LABEL_CLASSES } from '../lib/formClasses';
@@ -216,10 +217,10 @@ function deriveErrorMessage(error: ApiError | null): ResetPasswordErrorMessage |
   }
 
   if (error.status === 400) {
-    return { title: error.detail || 'Please check your password and try again.' };
+    return { title: getApiErrorMessage(error, 'Please check your password and try again.') };
   }
 
-  return { title: 'Something went wrong. Please try again.' };
+  return { title: getApiErrorMessage(error) };
 }
 
 function EyeIcon() {

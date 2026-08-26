@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { changeEmail } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
+import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { INPUT_CLASSES, LABEL_CLASSES } from '../lib/formClasses';
 
 type ChangeEmailErrorMessage = { title: string };
@@ -169,10 +170,10 @@ function deriveErrorMessage(error: ApiError | null): ChangeEmailErrorMessage | n
   }
 
   if (error.status === 400) {
-    return { title: error.detail || 'Please check your inputs and try again.' };
+    return { title: getApiErrorMessage(error, 'Please check your inputs and try again.') };
   }
 
-  return { title: 'Something went wrong. Please try again.' };
+  return { title: getApiErrorMessage(error) };
 }
 
 function EyeIcon() {

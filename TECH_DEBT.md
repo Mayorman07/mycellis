@@ -108,3 +108,25 @@
 
 &#x20; idx_stalks_created_by_user_id;`. Priority: low — cleanup, not correctness.
 
+
+
+\- \*\*No frontend test runner configured:\*\* Frontend has no Vitest / Jest / 
+
+&#x20; any test runner. Utility functions like `getApiErrorMessage` and all 
+
+&#x20; components ship untested from the frontend side. Backend tests cover API 
+
+&#x20; response shape, but pure-frontend logic (utilities, hooks, component 
+
+&#x20; behavior) has no coverage. Fix: add Vitest + a minimal `vitest.config.ts` 
+
+&#x20; + a `test` script in `package.json`. Establish testing convention 
+
+&#x20; (co-located `*.test.ts` files vs. a `__tests__/` folder — decide at setup 
+
+&#x20; time). Start with utility tests, expand to hooks and components 
+
+&#x20; incrementally. Priority: medium. Not launch-blocking — ship before adding 
+
+&#x20; a second engineer or before feature complexity grows further.
+

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { forgotPassword } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
+import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { getTheme, setTheme } from '../lib/theme';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
 import { HINT_CLASSES, INPUT_CLASSES, INPUT_ERROR_STYLE, LABEL_CLASSES } from '../lib/formClasses';
@@ -167,6 +168,7 @@ function deriveErrorMessage(error: ApiError | null): ForgotPasswordErrorMessage 
 
   // Backend always returns 202 regardless of whether the account exists
   // (anti-enumeration) — any error here is infrastructure/validation, never
-  // "this email doesn't exist", so a single generic message covers it.
-  return { title: 'Something went wrong. Please try again.' };
+  // "this email doesn't exist". Reading detail is still safe: it only ever
+  // describes that infra/validation failure, never account-existence info.
+  return { title: getApiErrorMessage(error) };
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { signup } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
+import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import type { Gender } from '../lib/types';
 import { getTheme, setTheme } from '../lib/theme';
 import { useDocumentTitle } from '../lib/hooks/useDocumentTitle';
@@ -352,7 +353,7 @@ function deriveErrorMessage(error: ApiError | null): SignupErrorMessage | null {
   }
 
   return {
-    title: 'Something went wrong. Please try again.',
+    title: getApiErrorMessage(error),
     detail: error.title || undefined,
   };
 }

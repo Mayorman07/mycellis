@@ -95,7 +95,7 @@ public class StalkServiceImpl implements StalkService {
     @Transactional(readOnly = true)
     public StalkResponse getStalkById(UUID organizationId, UUID id) {
         Stalk stalk = stalkRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("The stalk you're looking for doesn't exist or has been deleted"));
 
         if (!stalk.getOrganizationId().equals(organizationId)) {
             throw new TenantAccessException(
@@ -118,7 +118,7 @@ public class StalkServiceImpl implements StalkService {
         checkNotDuplicate(organizationId, normalizedUrl, id);
 
         Stalk stalk = stalkRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("The stalk you're looking for doesn't exist or has been deleted"));
 
         if (!stalk.getOrganizationId().equals(organizationId)) {
             throw new TenantAccessException(
@@ -141,7 +141,7 @@ public class StalkServiceImpl implements StalkService {
     @Transactional
     public void deleteStalk(UUID organizationId, UUID id) {
         Stalk stalk = stalkRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Stalk not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("The stalk you're looking for doesn't exist or has been deleted"));
 
         if (!stalk.getOrganizationId().equals(organizationId)) {
             throw new TenantAccessException(

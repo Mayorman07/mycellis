@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { login } from '../lib/api/auth';
 import type { ApiError } from '../lib/api/client';
+import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { getTheme, setTheme } from '../lib/theme';
 import { useDocumentTitle } from '../lib/hooks/useDocumentTitle';
 import { AmbientNetwork } from '../components/auth/AmbientNetwork';
@@ -276,7 +277,7 @@ function deriveErrorMessage(error: ApiError | null, email: string): LoginErrorMe
   }
 
   return {
-    title: 'Something went wrong. Please try again.',
+    title: getApiErrorMessage(error),
     detail: error.title || undefined,
   };
 }
