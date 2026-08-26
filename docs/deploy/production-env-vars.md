@@ -97,10 +97,12 @@ Once implemented, the expected value is:
 
 ## Actuator
 
-- `MANAGEMENT_PORT` — optional, defaults to 8081. `application-prod.properties`
-  now binds the actuator to `127.0.0.1` on this port, separate from the public
-  API port (8080) — metrics/prometheus/loggers endpoints are no longer
-  reachable from outside the Fly VM at all in prod.
+Actuator runs on the same port as the app (8080) — no separate management
+port or env var. `/actuator/health/**` and `/actuator/info` are permitAll'd
+in SecurityConfig; `management.endpoint.health.show-details=when-authorized`
+means anonymous callers (including Fly's health check, pointed at
+`/actuator/health/readiness`) get a bare UP/DOWN status, while authenticated
+ADMIN/SUPER_ADMIN users see full component detail.
 
 ## Known deploy-day gotchas
 

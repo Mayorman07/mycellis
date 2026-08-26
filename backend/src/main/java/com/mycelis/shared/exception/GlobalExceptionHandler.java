@@ -14,6 +14,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -200,6 +201,24 @@ public class GlobalExceptionHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         pd.setTitle("Unsafe URL");
         pd.setType(URI.create(BASE_URI + "unsafe-url"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    /**
+     * Any permitAll'd-but-otherwise-unmapped path (e.g. actuator endpoints not
+     * exposed on this port) falls through Spring MVC's handler resolution to
+     * the static-resource handler, which throws this instead of a plain 404.
+     * Without this handler it fell through to handleInternalError below,
+     * turning a routine "nothing here" into a misleading 500.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoResourceFound(NoResourceFoundException ex) {
+        log.warn("No resource found: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, "The resource you requested doesn't exist.");
+        pd.setTitle("Not Found");
+        pd.setType(URI.create(BASE_URI + "not-found"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }

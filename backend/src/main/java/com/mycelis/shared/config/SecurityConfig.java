@@ -142,8 +142,12 @@ public class SecurityConfig {
                                 "/fonts/**"
                         ).permitAll()
 
-                        // Health/metrics
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        // Health/metrics — "/actuator/health/**" (not just the exact path)
+                        // covers the liveness/readiness health groups Fly's health check
+                        // and probes hit as sub-paths (e.g. /actuator/health/readiness),
+                        // which an exact-string matcher would otherwise send to
+                        // .anyRequest().authenticated() and always 401.
+                        .requestMatchers("/actuator/health/**", "/actuator/health", "/actuator/info").permitAll()
 
                         // OpenAPI / Swagger UI in dev
                         .requestMatchers(

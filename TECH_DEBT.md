@@ -130,3 +130,33 @@
 
 &#x20; a second engineer or before feature complexity grows further.
 
+
+
+\- \*\*No health indicator for Resend email delivery:\*\* Email sending via 
+
+&#x20; `ResendEmailService` hits Resend's REST API directly, bypassing Spring's 
+
+&#x20; `JavaMailSender`. Spring's built-in `MailHealthIndicator` was checking a 
+
+&#x20; nonexistent localhost mailer and giving false DOWN signals — now 
+
+&#x20; disabled (`management.health.mail.enabled=false`). Result: aggregate 
+
+&#x20; `/actuator/health` no longer covers email delivery at all, so a Resend 
+
+&#x20; outage would not surface in health checks. Fix: write a custom 
+
+&#x20; `ResendHealthIndicator` that hits a lightweight Resend endpoint (e.g. 
+
+&#x20; their `/domains` or account status endpoint) with a bounded timeout. 
+
+&#x20; Register as a health indicator so aggregate health reflects real email 
+
+&#x20; delivery capability. Priority: medium. Not launch-blocking — ship when 
+
+&#x20; adding external service health monitoring generally (Neon connection 
+
+&#x20; health, Cloudflare, etc.) so it's part of a coherent monitoring story, 
+
+&#x20; not one-off.
+
