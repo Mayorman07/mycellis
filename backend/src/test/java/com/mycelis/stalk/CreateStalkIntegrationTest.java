@@ -244,6 +244,10 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 // CORS headers — missing these broke the frontend's live countdown UI in prod.
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
                 .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+                // Without this, Retry-After reaches the browser on the wire (visible in
+                // DevTools/curl) but res.headers.get('Retry-After') returns null in
+                // browser JS, since it's not on fetch()'s response-header safelist.
+                .andExpect(header().string("Access-Control-Expose-Headers", "Retry-After"))
                 // HeaderWriterFilter defaults — mirrors what the 201 responses above include.
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("X-Frame-Options", "DENY"))

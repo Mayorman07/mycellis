@@ -51,6 +51,19 @@ import java.util.concurrent.ConcurrentHashMap;
  * its own 429 response directly rather than throwing, since filters run
  * outside Spring MVC's {@code @ExceptionHandler} machinery.</p>
  *
+ * <p>Chain position alone isn't sufficient for every header this filter
+ * relies on being visible to the frontend: {@code Retry-After} is correctly
+ * present on the raw 429 response once {@code CorsFilter} runs, but
+ * cross-origin {@code fetch()} in browser JS only exposes a small safelist
+ * of response headers unless the server lists additional ones in
+ * {@code Access-Control-Expose-Headers}. {@code Retry-After} isn't on that
+ * safelist, so {@code SecurityConfig.corsConfigurationSource()} explicitly
+ * calls {@code setExposedHeaders(List.of("Retry-After"))}. Any future header
+ * this filter starts sending on rejection (or that the frontend starts
+ * reading off the response) needs the same treatment, or it will be visible
+ * in DevTools' Network tab and to curl but silently return {@code null} from
+ * {@code res.headers.get(...)} in real browser JS.</p>
+ *
  * <p><b>This filter must remain registered exclusively via
  * {@code HttpSecurity.addFilterAfter(...)} in SecurityConfig — never let it
  * also get auto-registered generically by Spring Boot.</b> Being a

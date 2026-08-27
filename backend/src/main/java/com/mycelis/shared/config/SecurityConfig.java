@@ -63,6 +63,12 @@ public class SecurityConfig {
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true); // required for session cookies
+        // Expose Retry-After to frontend JS. Cross-origin fetch() only exposes
+        // safelist headers by default; Retry-After is not on the safelist. Without
+        // this, res.headers.get('Retry-After') returns null in browser JS despite
+        // being present in the raw response. Wildcard "*" is not allowed here
+        // because allowCredentials=true — headers must be listed explicitly.
+        config.setExposedHeaders(List.of("Retry-After"));
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
