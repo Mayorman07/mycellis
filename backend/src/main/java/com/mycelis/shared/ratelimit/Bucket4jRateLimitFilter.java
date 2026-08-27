@@ -37,6 +37,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * response directly rather than throwing, since filters run outside Spring
  * MVC's {@code @ExceptionHandler} machinery.</p>
  *
+ * <p><b>This filter must remain registered exclusively via
+ * {@code HttpSecurity.addFilterAfter(...)} in SecurityConfig — never let it
+ * also get auto-registered generically by Spring Boot.</b> Being a
+ * {@code @Component} implementing {@code Filter} makes it a target for
+ * Boot's own servlet filter auto-configuration; see
+ * {@code SecurityConfig.bucket4jRateLimitFilterRegistration} for the
+ * {@code FilterRegistrationBean(enabled=false)} that suppresses that, and a
+ * full explanation of the double-registration bug it prevents (it silently
+ * disabled rate limiting in production once, after PR #5 shipped without
+ * it).</p>
+ *
  * <p>TODO: in-memory buckets become per-instance if we scale past one Fly
  * machine. Revisit with Upstash Redis if we go horizontal.</p>
  */
@@ -59,7 +70,11 @@ public class Bucket4jRateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        if (!"POST".equalsIgnoreCase(request.getMethod()) || !TARGET_PATH.equals(request.getRequestURI())) {
+        boolean isTargetRequest = "POST".equalsIgnoreCase(request.getMethod()) && TARGET_PATH.equals(request.getRequestURI());
+        log.debug("Bucket4jRateLimitFilter invoked: method={}, requestURI={}, gated={}",
+                request.getMethod(), request.getRequestURI(), isTargetRequest);
+
+        if (!isTargetRequest) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -70,6 +85,14 @@ public class Bucket4jRateLimitFilter extends OncePerRequestFilter {
             // authorization chain (.anyRequest().authenticated()) rejects it
             // with 401 downstream; there's nothing to rate-limit for a caller
             // who isn't logged in.
+            //
+            // If this branch fires for a request that DOES carry a valid
+            // session cookie, that's the signature of the double-registration
+            // bug this filter has hit before (see the class javadoc) — the
+            // principal simply isn't restored yet at whichever position this
+            // invocation is actually running at.
+            log.debug("Bucket4jRateLimitFilter: no authenticated MycelisUserPrincipal on {} {}, passing through",
+                    request.getMethod(), request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
@@ -78,6 +101,8 @@ public class Bucket4jRateLimitFilter extends OncePerRequestFilter {
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
         if (probe.isConsumed()) {
+            log.debug("Bucket4jRateLimitFilter: consumed 1 token for userId={}, remainingTokens={}",
+                    principal.getId(), probe.getRemainingTokens());
             filterChain.doFilter(request, response);
             return;
         }

@@ -6,6 +6,7 @@ import com.mycelis.user.security.RestAccessDeniedHandler;
 import com.mycelis.user.security.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -78,6 +79,55 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(DaoAuthenticationProvider authenticationProvider) {
         return new ProviderManager(authenticationProvider);
+    }
+
+    /**
+     * Suppresses Spring Boot's default servlet-filter auto-registration for
+     * Bucket4jRateLimitFilter. Do NOT delete this thinking it's dead code —
+     * removing it silently disables rate limiting again.
+     *
+     * <p>Bucket4jRateLimitFilter is a {@code @Component} implementing
+     * {@code Filter}, and it's ALSO manually wired into the security chain
+     * below via {@code .addFilterAfter(bucket4jRateLimitFilter,
+     * SecurityContextHolderFilter.class)}. That combination is a well-known
+     * Spring Boot + Spring Security footgun: because the filter is a plain
+     * bean implementing {@code Filter}, Spring Boot's own servlet filter
+     * auto-configuration ALSO registers it generically in the
+     * ApplicationContext-driven filter chain — entirely independently of,
+     * and with no awareness of, its manual position inside
+     * {@code HttpSecurity}'s chain. That generic registration can execute at
+     * a point in the overall pipeline where Spring Security hasn't yet
+     * restored the session's {@code Authentication}, so the filter's
+     * principal check fails there and it passes the request straight
+     * through. The problem isn't that this happens once — it's that
+     * {@code OncePerRequestFilter} guarantees its real logic (
+     * {@code doFilterInternal}) only ever runs once per request, tracked via
+     * a request attribute, regardless of which registration triggered the
+     * first invocation. So that first, wrongly-positioned, no-principal
+     * pass-through then silently suppresses the SECOND, correctly-positioned
+     * invocation inside {@code HttpSecurity}'s own chain — the one that
+     * would have actually seen the authenticated principal and enforced the
+     * rate limit. Net effect: the filter runs, does nothing, every single
+     * time, with no exceptions anywhere to signal that anything is wrong.
+     * This is exactly what happened in production after PR #5 shipped
+     * without this bean: a user created 11 stalks in ~2 minutes with zero
+     * 429 responses, against a configured limit of 5/minute. Neither the
+     * filter's own unit test nor the MockMvc integration test caught this,
+     * because neither test path goes through Boot's real generic
+     * servlet-filter auto-registration/ordering machinery the way a live
+     * deployment does — both passed throughout the entire time this bug was
+     * live in production.</p>
+     *
+     * <p>{@code setEnabled(false)} leaves {@code HttpSecurity}'s manual
+     * {@code .addFilterAfter(...)} wiring below as the ONLY place this
+     * filter is ever registered.</p>
+     */
+    @Bean
+    public FilterRegistrationBean<Bucket4jRateLimitFilter> bucket4jRateLimitFilterRegistration(
+            Bucket4jRateLimitFilter filter) {
+        FilterRegistrationBean<Bucket4jRateLimitFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false); // Suppress auto-registration; filter is manually wired via HttpSecurity.addFilterAfter
+        return registration;
     }
 
     @Bean

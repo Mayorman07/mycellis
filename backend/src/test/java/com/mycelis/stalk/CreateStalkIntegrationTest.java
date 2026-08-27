@@ -195,6 +195,18 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/stalk-quota-exceeded"));
     }
 
+    /**
+     * Verifies the filter's HTTP-level behavior via MockMvc — but passing
+     * here does NOT by itself prove rate limiting works in prod, and it
+     * didn't: this test (and Bucket4jRateLimitFilterTest) passed
+     * continuously through the entire window PR #5's rate limiter was
+     * silently non-functional in production, because neither test path goes
+     * through Spring Boot's real generic servlet-filter auto-registration
+     * the way a live deployment does. Prod correctness depends on
+     * SecurityConfig's bucket4jRateLimitFilterRegistration bean
+     * (FilterRegistrationBean with setEnabled(false)) continuing to exist —
+     * no test in this suite can catch its removal.
+     */
     @Test
     void sixthStalkCreationWithinAMinuteIsRateLimited() throws Exception {
         MockHttpSession session = login(createVerifiedUser("rate-limit-cap"));
