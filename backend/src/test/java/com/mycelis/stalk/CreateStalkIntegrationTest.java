@@ -206,6 +206,22 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
      * SecurityConfig's bucket4jRateLimitFilterRegistration bean
      * (FilterRegistrationBean with setEnabled(false)) continuing to exist —
      * no test in this suite can catch its removal.
+     *
+     * <p>The CORS/security header assertions below are a third such
+     * prod-only bug's regression test: Bucket4jRateLimitFilter was anchored
+     * via {@code .addFilterAfter(..., SecurityContextHolderFilter.class)},
+     * placing it before both CorsFilter and HeaderWriterFilter in Spring
+     * Security's chain. Since this filter short-circuits on rejection
+     * without calling {@code filterChain.doFilter(...)}, and neither of
+     * those two filters has a post-processing leg, a 429 response shipped
+     * with no CORS headers and no security headers at all — browsers
+     * refused to expose the response body to JS. The header values below
+     * were captured from this app's actual 201 responses (see
+     * SecurityConfig; no custom {@code .headers(...)} customizer exists, so
+     * these are Spring Security's stock defaults) and must also appear on
+     * the 429. An {@code Origin} header is required on the request for
+     * CorsFilter to add its headers at all — real browsers always send one
+     * on cross-origin requests.</p>
      */
     @Test
     void sixthStalkCreationWithinAMinuteIsRateLimited() throws Exception {
@@ -216,6 +232,7 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
         }
 
         mockMvc.perform(post("/api/stalks")
+                        .header("Origin", "http://localhost:5173")
                         .session(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest("https://example.com/rate-limit-5"))))
@@ -223,7 +240,17 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 .andExpect(content().contentType("application/problem+json;charset=UTF-8"))
                 .andExpect(jsonPath("$.detail").value("You've created stalks too quickly."))
                 .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/rate-limit-exceeded"))
-                .andExpect(header().exists("Retry-After"));
+                .andExpect(header().exists("Retry-After"))
+                // CORS headers — missing these broke the frontend's live countdown UI in prod.
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+                .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+                // HeaderWriterFilter defaults — mirrors what the 201 responses above include.
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("X-XSS-Protection", "0"))
+                .andExpect(header().string("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate"))
+                .andExpect(header().string("Pragma", "no-cache"))
+                .andExpect(header().string("Expires", "0"));
     }
 
     private CreateStalkRequest validRequest(String url) {

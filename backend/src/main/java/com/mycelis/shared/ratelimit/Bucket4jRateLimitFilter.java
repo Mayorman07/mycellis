@@ -32,10 +32,24 @@ import java.util.concurrent.ConcurrentHashMap;
  * must have room or neither is consumed, so no manual probe-combining or
  * rollback logic is needed here.
  *
- * <p>Runs after {@code SecurityContextHolderFilter} (see SecurityConfig) so
- * the authenticated principal is already available. Writes its own 429
- * response directly rather than throwing, since filters run outside Spring
- * MVC's {@code @ExceptionHandler} machinery.</p>
+ * <p>Runs after {@code CorsFilter} (see SecurityConfig) — not merely after
+ * {@code SecurityContextHolderFilter}, though that's transitively satisfied
+ * too, since {@code CorsFilter} runs later in the chain. The stronger anchor
+ * matters because this filter short-circuits on rejection without ever
+ * calling {@code filterChain.doFilter(...)}, and neither {@code CorsFilter}
+ * nor {@code HeaderWriterFilter} has a post-processing leg — both write
+ * their headers synchronously before delegating further down the chain. If
+ * this filter ran before them, a rejected request's 429 response would ship
+ * with no CORS headers and no security headers at all, which is exactly
+ * what happened in production: browsers refused to expose the response body
+ * to JS, and PR #5's live countdown UI silently fell back to a generic
+ * network-error message. {@code CreateStalkIntegrationTest
+ * #sixthStalkCreationWithinAMinuteIsRateLimited} asserts on these headers
+ * specifically so that anchoring this filter back to
+ * {@code SecurityContextHolderFilter.class} (or any other pre-{@code
+ * CorsFilter} position) fails the suite instead of shipping quietly. Writes
+ * its own 429 response directly rather than throwing, since filters run
+ * outside Spring MVC's {@code @ExceptionHandler} machinery.</p>
  *
  * <p><b>This filter must remain registered exclusively via
  * {@code HttpSecurity.addFilterAfter(...)} in SecurityConfig — never let it

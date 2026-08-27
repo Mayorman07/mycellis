@@ -19,11 +19,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -89,7 +89,7 @@ public class SecurityConfig {
      * <p>Bucket4jRateLimitFilter is a {@code @Component} implementing
      * {@code Filter}, and it's ALSO manually wired into the security chain
      * below via {@code .addFilterAfter(bucket4jRateLimitFilter,
-     * SecurityContextHolderFilter.class)}. That combination is a well-known
+     * CorsFilter.class)}. That combination is a well-known
      * Spring Boot + Spring Security footgun: because the filter is a plain
      * bean implementing {@code Filter}, Spring Boot's own servlet filter
      * auto-configuration ALSO registers it generically in the
@@ -219,10 +219,18 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
 
-                // Per-user rate limit on POST /api/stalks only. Must run after
-                // SecurityContextHolderFilter so the authenticated principal is
-                // already restored from the session when the filter reads it.
-                .addFilterAfter(bucket4jRateLimitFilter, SecurityContextHolderFilter.class)
+                // Per-user rate limit on POST /api/stalks only. Anchored after
+                // CorsFilter so that (a) the authenticated principal is available
+                // transitively (CorsFilter runs after SecurityContextHolderFilter),
+                // AND (b) CorsFilter and HeaderWriterFilter have set their response
+                // headers before this filter runs — critical because this filter
+                // short-circuits on rejection without invoking filterChain.doFilter(),
+                // and neither CorsFilter nor HeaderWriterFilter have post-processing
+                // legs. Without this anchor, 429 responses would ship without CORS
+                // or security headers, and browsers block credentialed responses
+                // without proper CORS. See Bucket4jRateLimitFilter's class javadoc
+                // for the full history.
+                .addFilterAfter(bucket4jRateLimitFilter, CorsFilter.class)
 
                 //  disable Spring's default login page
                 .formLogin(AbstractHttpConfigurer::disable)
