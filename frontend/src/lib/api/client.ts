@@ -6,14 +6,20 @@ export class ApiError extends Error {
   title: string;
   detail?: string;
   instance?: string;
+  retryAfterSeconds?: number;
 
-  constructor(status: number, title: string, opts?: { type?: string; detail?: string; instance?: string }) {
+  constructor(
+    status: number,
+    title: string,
+    opts?: { type?: string; detail?: string; instance?: string; retryAfterSeconds?: number },
+  ) {
     super(title);
     this.status = status;
     this.title = title;
     this.type = opts?.type;
     this.detail = opts?.detail;
     this.instance = opts?.instance;
+    this.retryAfterSeconds = opts?.retryAfterSeconds;
   }
 }
 
@@ -52,10 +58,16 @@ export async function apiFetch<TResponse>(path: string, options: RequestInit = {
 
   if (!res.ok) {
     const problem: Partial<ProblemDetail> = await res.json().catch(() => ({}));
+    // Only set on 429s today (Bucket4jRateLimitFilter sends a plain integer
+    // number of seconds, never an HTTP-date) — undefined for every other
+    // status, since the header is simply absent there.
+    const retryAfterHeader = res.headers.get('Retry-After');
+    const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : undefined;
     throw new ApiError(res.status, problem.title ?? `Request failed with status ${res.status}`, {
       type: problem.type,
       detail: problem.detail,
       instance: problem.instance,
+      retryAfterSeconds: Number.isNaN(retryAfterSeconds) ? undefined : retryAfterSeconds,
     });
   }
 

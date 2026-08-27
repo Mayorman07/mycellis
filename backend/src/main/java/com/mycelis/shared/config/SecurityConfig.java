@@ -1,5 +1,6 @@
 package com.mycelis.shared.config;
 
+import com.mycelis.shared.ratelimit.Bucket4jRateLimitFilter;
 import com.mycelis.user.security.MycelisUserDetailsService;
 import com.mycelis.user.security.RestAccessDeniedHandler;
 import com.mycelis.user.security.RestAuthenticationEntryPoint;
@@ -17,6 +18,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -33,6 +35,7 @@ public class SecurityConfig {
     private final MycelisUserDetailsService userDetailsService;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
+    private final Bucket4jRateLimitFilter bucket4jRateLimitFilter;
 
     // Cloudflare Pages (mycellis.dev) and Fly.io (api.mycellis.dev) are
     // separate origins in production — without this, every authenticated
@@ -165,6 +168,11 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
+
+                // Per-user rate limit on POST /api/stalks only. Must run after
+                // SecurityContextHolderFilter so the authenticated principal is
+                // already restored from the session when the filter reads it.
+                .addFilterAfter(bucket4jRateLimitFilter, SecurityContextHolderFilter.class)
 
                 //  disable Spring's default login page
                 .formLogin(AbstractHttpConfigurer::disable)

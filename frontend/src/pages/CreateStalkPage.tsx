@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createStalk } from '../lib/api/stalks';
 import type { ApiError } from '../lib/api/client';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { useRetryCountdown } from '../lib/hooks/useRetryCountdown';
 import { StalkForm } from '../components/stalks/StalkForm';
 
 type CreateStalkErrorMessage = { title: string };
@@ -23,7 +24,8 @@ export default function CreateStalkPage() {
     },
   });
 
-  const errorMessage = deriveErrorMessage(createMutation.error);
+  const retrySecondsRemaining = useRetryCountdown(createMutation.error?.retryAfterSeconds ?? null);
+  const errorMessage = deriveErrorMessage(createMutation.error, retrySecondsRemaining);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -54,7 +56,7 @@ export default function CreateStalkPage() {
   );
 }
 
-function deriveErrorMessage(error: ApiError | null): CreateStalkErrorMessage | null {
+function deriveErrorMessage(error: ApiError | null, retrySecondsRemaining: number): CreateStalkErrorMessage | null {
   if (!error) {
     return null;
   }
@@ -64,7 +66,11 @@ function deriveErrorMessage(error: ApiError | null): CreateStalkErrorMessage | n
   }
 
   if (error.status === 429) {
-    return { title: "You've created a lot of stalks recently. Try again in a moment." };
+    if (retrySecondsRemaining <= 0) {
+      return { title: 'You can try again now.' };
+    }
+    const unit = retrySecondsRemaining === 1 ? 'second' : 'seconds';
+    return { title: `You've created stalks too quickly. Try again in ${retrySecondsRemaining} ${unit}.` };
   }
 
   if (error.status === 400) {

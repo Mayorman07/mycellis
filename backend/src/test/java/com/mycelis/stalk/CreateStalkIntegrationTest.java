@@ -1,18 +1,26 @@
 package com.mycelis.stalk;
 
 import com.mycelis.IntegrationTestBase;
+import com.mycelis.monitoring.constant.LatencyState;
+import com.mycelis.monitoring.constant.ReliabilityState;
+import com.mycelis.monitoring.constant.StalkState;
 import com.mycelis.monitoring.dto.requests.CreateStalkRequest;
+import com.mycelis.monitoring.entity.Stalk;
+import com.mycelis.monitoring.repository.StalkRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,6 +40,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * separate, stricter check than the DTO's own @Max(120).</p>
  */
 class CreateStalkIntegrationTest extends IntegrationTestBase {
+
+    @Autowired
+    private StalkRepository stalkRepository;
 
     @Test
     void createStalkReturnsCreatedWithStalkResponse() throws Exception {
@@ -147,14 +158,32 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/duplicate-url"));
     }
 
+    /**
+     * Seeds 19 stalks directly via the repository rather than 19+ HTTP calls.
+     * This test verifies quota enforcement, not stalk creation itself, and
+     * rapid-fire HTTP POSTs would trip PR #5's 5/minute rate limit long
+     * before reaching the 20-stalk boundary — the two features now share the
+     * same endpoint. Pattern going forward: an integration test that needs
+     * to reach a state faster than rate limits allow should seed setup state
+     * via the repository directly, reserving real HTTP calls for the
+     * specific behavior under test (here: the 20th succeeds, the 21st 409s).
+     */
     @Test
     void twentyFirstStalkIsRejectedWithQuotaExceeded() throws Exception {
-        MockHttpSession session = login(createVerifiedUser("quota-cap"));
+        IntegrationTestBase.TestUser testUser = createVerifiedUser("quota-cap");
+        MockHttpSession session = login(testUser);
+        UUID organizationId = userRepository.findById(testUser.id()).orElseThrow().getOrganizationId();
 
-        for (int i = 0; i < 20; i++) {
-            createStalk(session, validRequest("https://example.com/quota-" + i));
+        for (int i = 0; i < 19; i++) {
+            seedStalkDirectly(organizationId, testUser.id(), "https://example.com/quota-seed-" + i);
         }
 
+        // 20th stalk: real HTTP call, well within the rate limit, should succeed.
+        createStalk(session, validRequest("https://example.com/quota-20"));
+
+        // 21st stalk: real HTTP call — org is now at its cap, should 409.
+        // Only 2 HTTP calls made in this test in total, nowhere near the
+        // 5/minute rate limit, so this is unambiguously the quota check.
         mockMvc.perform(post("/api/stalks")
                         .session(session)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,6 +192,24 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.detail").value(
                         "Free tier includes up to 20 stalks. Delete unused stalks or contact support to upgrade."))
                 .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/stalk-quota-exceeded"));
+    }
+
+    @Test
+    void sixthStalkCreationWithinAMinuteIsRateLimited() throws Exception {
+        MockHttpSession session = login(createVerifiedUser("rate-limit-cap"));
+
+        for (int i = 0; i < 5; i++) {
+            createStalk(session, validRequest("https://example.com/rate-limit-" + i));
+        }
+
+        mockMvc.perform(post("/api/stalks")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest("https://example.com/rate-limit-5"))))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.detail").value("You've created stalks too quickly."))
+                .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/rate-limit-exceeded"))
+                .andExpect(header().exists("Retry-After"));
     }
 
     private CreateStalkRequest validRequest(String url) {
@@ -181,5 +228,26 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isCreated())
                 .andReturn();
         return extractId(result);
+    }
+
+    /** Bypasses HTTP (and therefore the rate limiter) for tests that just need N pre-existing stalks. */
+    private void seedStalkDirectly(UUID organizationId, UUID createdByUserId, String url) {
+        Stalk stalk = Stalk.builder()
+                .organizationId(organizationId)
+                .createdByUserId(createdByUserId)
+                .url(url)
+                .normalizedUrl(url)
+                .growthIntervalSeconds(60)
+                .timeoutSeconds(10)
+                .currentState(StalkState.DORMANT)
+                .reliabilityState(ReliabilityState.AWAKENING)
+                .latencyState(LatencyState.NORMAL)
+                .healthIndex(0.0)
+                .consecutiveFailures(0)
+                .isActive(true)
+                .nextCheckAt(Instant.now())
+                .lastActivatedAt(Instant.now())
+                .build();
+        stalkRepository.save(stalk);
     }
 }

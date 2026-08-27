@@ -160,3 +160,27 @@
 
 &#x20; not one-off.
 
+
+
+\- \*\*Bucket4j in-memory map grows unbounded:\*\* `Bucket4jRateLimitFilter` uses 
+
+&#x20; a `ConcurrentHashMap<UUID, Bucket>` keyed on user ID with no eviction. 
+
+&#x20; Every user who ever hits `POST /api/stalks` gets a permanent map entry 
+
+&#x20; for the JVM's lifetime. At current scale (beta → early public) this is a 
+
+&#x20; non-issue — even 100k users at ~1KB per bucket is 100MB, easily fits in 
+
+&#x20; Fly memory. Becomes a real concern only at genuine scale. Fix: options 
+
+&#x20; (pick when the time comes): (a) Caffeine cache with time-based eviction, 
+
+&#x20; (b) migrate storage to Upstash Redis with TTLs (also solves the 
+
+&#x20; horizontal-scale concern already flagged via TODO comment in the filter 
+
+&#x20; itself), (c) both. Priority: low. Not launch-blocking — revisit when the 
+
+&#x20; horizontal-scale TODO gets addressed.
+

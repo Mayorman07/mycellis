@@ -1,6 +1,7 @@
 package com.mycelis.shared.exception;
 
 import com.mycelis.monitoring.security.UnsafeUrlException;
+import com.mycelis.shared.ratelimit.TooManyRequestsException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -211,6 +212,23 @@ public class GlobalExceptionHandler {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         pd.setTitle("Unsafe URL");
         pd.setType(URI.create(BASE_URI + "unsafe-url"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
+    /**
+     * Not exercised by Bucket4jRateLimitFilter today — that filter writes its
+     * 429 directly since it runs outside this class's reach (filters sit
+     * outside Spring MVC's exception-resolution machinery). Ready here so a
+     * future service-layer rate limit doesn't need a separate handler added
+     * later.
+     */
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ProblemDetail handleTooManyRequests(TooManyRequestsException ex) {
+        log.warn("Rate limit exceeded: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+        pd.setTitle("Rate Limit Exceeded");
+        pd.setType(URI.create(BASE_URI + "rate-limit-exceeded"));
         pd.setProperty("timestamp", Instant.now());
         return pd;
     }
