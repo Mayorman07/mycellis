@@ -1,24 +1,49 @@
 package com.mycelis.shared.ratelimit;
 
+import com.mycelis.user.security.MycelisUserPrincipal;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.Refill;
+import jakarta.servlet.FilterChain;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
- * Exercises the exact bandwidth configuration Bucket4jRateLimitFilter uses
- * (5/minute + 25/day, stacked on one bucket) directly via Bucket4j's own
- * API — no servlet/Spring plumbing needed to verify the throttling design
- * itself. The filter's HTTP-level behavior (principal extraction, 429
- * response shape, Retry-After header) is covered by the integration test in
- * CreateStalkIntegrationTest instead.
+ * Two things live in this file, deliberately: the throttling design itself
+ * (bandwidth math, exercised directly via Bucket4j's own API — no servlet
+ * plumbing needed for that part), AND the filter's actual HTTP-level
+ * response shape (Content-Type/charset, status), exercised by invoking
+ * Bucket4jRateLimitFilter.doFilterInternal directly with Spring's real
+ * MockHttpServletResponse.
+ *
+ * <p>That second half didn't always exist here — this file originally
+ * assumed the filter had "no HTTP behavior worth testing" and left that
+ * entirely to CreateStalkIntegrationTest's slower, full-Spring-context
+ * MockMvc test. That assumption was wrong: a missing charset on the 429
+ * response (fixed alongside this test) shipped to prod undetected because
+ * neither this file nor the integration test asserted on Content-Type at
+ * the time. Don't remove the HTTP-level test below on the assumption that
+ * the bucket-logic tests above are "the real test" — they cover a
+ * genuinely different failure class.</p>
  */
 class Bucket4jRateLimitFilterTest {
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     private Bucket newBucket() {
         return Bucket.builder()
@@ -82,5 +107,38 @@ class Bucket4jRateLimitFilterTest {
 
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
         assertThat(probe.isConsumed()).isFalse();
+    }
+
+    /**
+     * Regression test for a real prod bug: the 429 response was missing an
+     * explicit UTF-8 charset, so it fell back to the servlet container's
+     * ISO-8859-1 default — browsers refused to parse it, and PR #5's live
+     * countdown UI never appeared. MockHttpServletResponse (Spring's, not a
+     * Mockito mock) is what makes this test meaningful: it genuinely models
+     * servlet charset defaults, so it would have caught this exact bug
+     * before it reached prod.
+     */
+    @Test
+    void writesUtf8CharsetOnRateLimitedResponse() throws Exception {
+        Bucket4jRateLimitFilter filter = new Bucket4jRateLimitFilter();
+        MycelisUserPrincipal principal = new MycelisUserPrincipal(
+                UUID.randomUUID(), UUID.randomUUID(), List.of(), false,
+                "ratelimit-test@example.test", "password", true, true, true, true, List.of());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+        FilterChain filterChain = mock(FilterChain.class);
+
+        // Exhaust the per-minute bandwidth (5 tokens) first.
+        for (int i = 0; i < 5; i++) {
+            filter.doFilterInternal(
+                    new MockHttpServletRequest("POST", "/api/stalks"), new MockHttpServletResponse(), filterChain);
+        }
+
+        // 6th request in the same window should be rejected.
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        filter.doFilterInternal(new MockHttpServletRequest("POST", "/api/stalks"), response, filterChain);
+
+        assertThat(response.getStatus()).isEqualTo(429);
+        assertThat(response.getContentType()).isEqualTo("application/problem+json;charset=UTF-8");
     }
 }

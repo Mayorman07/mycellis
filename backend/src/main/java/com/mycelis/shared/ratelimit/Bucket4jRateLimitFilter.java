@@ -102,7 +102,7 @@ public class Bucket4jRateLimitFilter extends OncePerRequestFilter {
         pd.setProperty("timestamp", Instant.now());
 
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-        response.setContentType("application/problem+json");
+        response.setContentType("application/problem+json;charset=UTF-8");
         response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
         response.getWriter().write(objectMapper.writeValueAsString(pd));
     }
