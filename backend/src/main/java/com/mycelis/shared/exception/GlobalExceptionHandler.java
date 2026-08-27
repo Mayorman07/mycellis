@@ -195,6 +195,16 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(StalkQuotaExceededException.class)
+    public ProblemDetail handleStalkQuotaExceeded(StalkQuotaExceededException ex) {
+        log.warn("Stalk quota exceeded: {}", ex.getMessage());
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        pd.setTitle("Stalk Quota Exceeded");
+        pd.setType(URI.create(BASE_URI + "stalk-quota-exceeded"));
+        pd.setProperty("timestamp", Instant.now());
+        return pd;
+    }
+
     @ExceptionHandler(UnsafeUrlException.class)
     public ProblemDetail handleUnsafeUrl(UnsafeUrlException ex) {
         log.warn("Unsafe URL rejected: {}", ex.getMessage());

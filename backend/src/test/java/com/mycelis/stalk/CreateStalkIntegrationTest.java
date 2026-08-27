@@ -147,6 +147,24 @@ class CreateStalkIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/duplicate-url"));
     }
 
+    @Test
+    void twentyFirstStalkIsRejectedWithQuotaExceeded() throws Exception {
+        MockHttpSession session = login(createVerifiedUser("quota-cap"));
+
+        for (int i = 0; i < 20; i++) {
+            createStalk(session, validRequest("https://example.com/quota-" + i));
+        }
+
+        mockMvc.perform(post("/api/stalks")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest("https://example.com/quota-21"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value(
+                        "Free tier includes up to 20 stalks. Delete unused stalks or contact support to upgrade."))
+                .andExpect(jsonPath("$.type").value("https://mycellis.dev/errors/stalk-quota-exceeded"));
+    }
+
     private CreateStalkRequest validRequest(String url) {
         CreateStalkRequest request = new CreateStalkRequest();
         request.setUrl(url);

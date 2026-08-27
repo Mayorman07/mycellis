@@ -8,6 +8,8 @@ import com.mycelis.monitoring.entity.Pulse;
 import com.mycelis.monitoring.entity.Stalk;
 import com.mycelis.shared.exception.TenantAccessException;
 import com.mycelis.shared.exception.DuplicateStalkUrlException;
+import com.mycelis.shared.exception.StalkQuotaExceededException;
+import com.mycelis.monitoring.quota.StalkQuotaPolicy;
 import com.mycelis.monitoring.security.SafeUrlValidator;
 import com.mycelis.monitoring.security.UnsafeUrlException;
 import com.mycelis.monitoring.dto.requests.CreateStalkRequest;
@@ -55,12 +57,16 @@ public class StalkServiceImpl implements StalkService {
     private final PulseMapper pulseMapper;
     private final SafeUrlValidator safeUrlValidator;
     private final UrlNormalizer urlNormalizer;
+    // TODO: when paid tiers launch, add PlanTierStalkQuotaPolicyDispatcher as
+    // @Primary bean routing on Organization.planTier.
+    private final StalkQuotaPolicy stalkQuotaPolicy;
 
     @Override
     @Transactional
     @SuppressWarnings("deprecation")
     public StalkResponse createStalk(UUID organizationId, UUID createdByUserId, CreateStalkRequest request) {
         validateTimeoutAgainstCycle(request.getTimeoutSeconds());
+        checkQuotaNotExceeded(organizationId);
         validateUrlIsSafe(request.getUrl());
         String normalizedUrl = urlNormalizer.normalize(request.getUrl());
         checkNotDuplicate(organizationId, normalizedUrl, null);
@@ -424,6 +430,20 @@ public class StalkServiceImpl implements StalkService {
         SafeUrlValidator.Result result = safeUrlValidator.validate(url);
         if (!result.allowed()) {
             throw new UnsafeUrlException("URLs pointing to internal addresses are not allowed");
+        }
+    }
+
+    /**
+     * Soft cap: countByOrganizationId + insert is not atomic under READ
+     * COMMITTED. Accepted trade-off — worst case user lands at N+1, self-heals
+     * on next create.
+     */
+    private void checkQuotaNotExceeded(UUID organizationId) {
+        int maxStalks = stalkQuotaPolicy.maxStalks(organizationId);
+        long currentCount = stalkRepository.countByOrganizationId(organizationId);
+        if (currentCount >= maxStalks) {
+            throw new StalkQuotaExceededException(
+                    "Free tier includes up to 20 stalks. Delete unused stalks or contact support to upgrade.");
         }
     }
 
