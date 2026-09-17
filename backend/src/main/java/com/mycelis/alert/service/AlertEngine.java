@@ -3,6 +3,7 @@ package com.mycelis.alert.service;
 import com.mycelis.alert.constant.AlertType;
 import com.mycelis.alert.entity.Alert;
 import com.mycelis.alert.repository.AlertRepository;
+import com.mycelis.monitoring.constant.ReliabilityState;
 import com.mycelis.monitoring.entity.Pulse;
 import com.mycelis.monitoring.entity.Stalk;
 import com.mycelis.monitoring.repository.PulseRepository;
@@ -80,6 +81,10 @@ public class AlertEngine {
     }
 
     private void evaluateStalk(Stalk stalk) {
+        if (stalk.getReliabilityState() == ReliabilityState.AWAKENING) {
+            return;
+        }
+
         List<Pulse> recentPulses = pulseRepository.findTopByStalkIdOrderByCreatedAtDesc(
                 stalk.getId(), PageRequest.of(0, PULSE_LOOKBACK_LIMIT));
 
