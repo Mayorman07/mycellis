@@ -5,6 +5,11 @@ backend/HELP.md
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Scratch files ###
+backend/body.json
+**/body.json
+*.scratch.json
+
 ### STS ###
 .apt_generated
 .classpath
