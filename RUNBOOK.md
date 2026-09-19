@@ -1,19 +1,13 @@
 # Runbook
 
-> Note: This file contains real account/project IDs in dashboard URLs. Repo is private — that's fine. If this repo ever becomes public, see POST_LAUNCH_ROADMAP.md for the redaction checklist.
-
 ## When to use this
 
 3am, alert fires, brain not working. Follow these in order. Don't improvise.
 
 ## First response
 
-1. Check status: `fly status -a mycellis-backend`
-2. Check your dashboards:
-   - UptimeRobot: https://dashboard.uptimerobot.com/monitors/803717436
-   - Cloudflare Pages: https://dash.cloudflare.com/98b19a5d2cd58ac17ffbf1e35b6da70b/pages/view/mycellis
-   - Neon: https://console.neon.tech/app/projects/curly-star-98427043
-   - Fly.io: https://fly.io/apps/mycellis-backend
+1. Check platform status: `fly status -a <app-name>`
+2. Check your dashboards (UptimeRobot, Cloudflare Pages, Neon, Fly.io — bookmarks/private notes for account-specific URLs).
 
 ### Is the platform down?
 
@@ -23,79 +17,71 @@ If the symptoms point at Fly, Neon, or Cloudflare rather than the app itself, ch
 - Neon status: https://neonstatus.com/
 - Cloudflare status: https://www.cloudflarestatus.com/
 
-If one of these shows an active incident: wait and monitor. Post to the beta WhatsApp group: "We're aware, watching upstream." Don't panic-fix someone else's infra.
+If one of these shows an active incident: wait and monitor. Notify the user group: "We're aware, watching upstream." Don't panic-fix someone else's infra.
 
 ## Common incidents
 
 ### Backend is 500-ing on every request
 
 ```bash
-fly logs -a mycellis-backend --no-tail | Select-Object -Last 100   # PowerShell
-fly logs -a mycellis-backend --no-tail | tail -100                  # bash/zsh
+fly logs -a <app-name> --no-tail | Select-Object -Last 100   # PowerShell
+fly logs -a <app-name> --no-tail | tail -100                  # bash/zsh
 ```
 
-Look for the stack trace at the bottom. Common causes: DB connection lost, a required secret missing (see `backend/.env.example` for which ones have no default and will crash boot — `FRONTEND_URL`, `BACKEND_URL`, `APP_BASE_URL`), or a deploy regression.
+Look for the stack trace at the bottom. Common causes: DB connection lost, a required secret missing, or a deploy regression.
 
-### Backend is unreachable (UptimeRobot red, connection refused)
+### Backend is unreachable
 
-1. `fly status -a mycellis-backend` — is the machine down?
-2. If yes: `fly machine start <machine-id> -a mycellis-backend`
+1. `fly status -a <app-name>` — is the machine down?
+2. If yes: `fly machine start <machine-id> -a <app-name>`
 3. If the machine won't start: roll back to the last good image.
-4. Rollback: `fly releases -a mycellis-backend` → find the last green release → `fly deploy --image <image>`
+4. Rollback: `fly releases -a <app-name>` → find the last green release → `fly deploy --image <image>`
 
 ### Login broken / CORS errors
 
-1. `fly secrets list -a mycellis-backend` — check `CORS_ALLOWED_ORIGINS` is set and includes the origin that's failing.
-2. Test the preflight manually:
-   ```bash
-   curl -i -X OPTIONS https://api.mycellis.dev/api/auth/login \
-     -H "Origin: https://mycellis.dev" \
-     -H "Access-Control-Request-Method: POST" \
-     -H "Access-Control-Request-Headers: Content-Type"
-   ```
-   Look for `Access-Control-Allow-Origin` echoing back the `Origin` you sent. If it's missing, that origin isn't in `CORS_ALLOWED_ORIGINS`.
-3. Common cause: forgot to add `www` or the apex domain to allowed origins — the default is `https://mycellis.dev` only (see `SecurityConfig.java`), comma-separate multiple origins.
+1. `fly secrets list -a <app-name>` — check CORS config is set and includes the origin that's failing.
+2. Test the preflight manually with `curl -i -X OPTIONS`.
+3. Common cause: forgot to add www or the apex domain to allowed origins.
 
 ### DB is corrupted / user data missing
 
 1. Neon console → project → Branches → Restore from history.
-2. Free tier: 6 hours retention. Restore to a point-in-time *before* the incident.
-3. **Warning**: this creates a new branch. Update the `DATABASE_URL` Fly secret to the new branch's connection string — the backend parses username/password directly out of that single URL at boot (see `DatabaseUrlConfiguration.java`), so this one variable is normally all you need to update.
-4. `fly deploy -a mycellis-backend` (or just `fly secrets set DATABASE_URL=...` — Fly restarts machines automatically on a secret change, but redeploying is the safer explicit step).
+2. Free tier retention is limited. Restore to a point-in-time before the incident.
+3. **Warning**: this creates a new branch. Update the connection string secret to the new branch.
+4. Redeploy or update the secret; Fly restarts machines automatically on secret change.
 
-### Emails not sending (Resend)
+### Emails not sending
 
-1. Check the Resend dashboard for delivery failures.
-2. `fly secrets list -a mycellis-backend` — confirm `MYCELIS_EMAIL_PROVIDER` is `resend`.
-3. Confirm `RESEND_API_KEY` is set and hasn't been rotated out from under the running app.
-4. The sending domain (`send.mycellis.dev`) must be verified in Resend, and `MYCELIS_EMAIL_FROM` must match a verified sender on that domain.
+1. Check the email provider's dashboard for delivery failures.
+2. Confirm relevant secrets are set and haven't been rotated out from under the running app.
+3. Sending domain must be verified with the provider.
 
 ### Frontend won't load / white page
 
-1. Check the Cloudflare Pages deployment status for the project.
-2. Check the browser console for errors — most likely an import path issue or a missing/misconfigured `VITE_API_BASE_URL`.
-3. If it's a bad deploy: `npx wrangler pages deployment list --project-name=mycellis` to find the last good deployment, then use the Cloudflare dashboard's Pages project → Deployments → select that deployment → "Rollback to this deployment."
+1. Check the CDN deployment status for the project.
+2. Check the browser console for errors — most likely an import path issue or a missing/misconfigured API base URL.
+3. If it's a bad deploy: use the CDN dashboard to rollback to the last good deployment.
 
 ## Killing everything (last resort)
 
 ```bash
-fly scale count 0 -a mycellis-backend
+fly scale count 0 -a <app-name>
 ```
 
 Stops all machines. App is down, but bleeding stops. Diagnose, then:
 
 ```bash
-fly scale count 1 -a mycellis-backend
+fly scale count 1 -a <app-name>
 ```
 
 ## Rotating leaked credentials
 
-**Admin password.** `MYCELIS_ADMIN_PASSWORD` only seeds a *brand-new* super-admin on first boot — `InitialDataSeeder` skips silently if a user with that email already exists, so setting a new Fly secret does **not** rotate an existing admin's password. To actually change it: log into the app → Settings → Change Password.
+**Admin password.** Depending on your seeder logic, the admin-password secret may only seed a brand-new super-admin on first boot rather than rotating an existing one. To actually change an existing admin's password, use the app's own Settings → Change Password flow.
 
-**Resend API key.** Resend dashboard → API keys → rotate → `fly secrets set RESEND_API_KEY="new"`.
+**External API keys.** Rotate in the provider's dashboard, then update the Fly secret.
 
-**Database password.** Neon console → Roles → reset. Production reads a single `DATABASE_URL` with the password embedded in it (see the DB-corruption section above) — update that Fly secret with the new connection string rather than a separate `DATABASE_PASSWORD` secret, unless you know the deployment is set up to use the separate `DATABASE_USERNAME`/`DATABASE_PASSWORD` fallback instead.
+**Database password.** Reset in the database provider's console, then update the connection-string secret.
 
 ## Escalation
 
-If it's a Fly / Neon / Cloudflare outage, their status pages tell you. Post to the beta WhatsApp group: "We're aware, watching upstream." Don't panic-fix someone else's infra.
+If it's an infra provider outage, their status pages tell you. Notify the user group: "We're aware, watching upstream." Don't panic-fix someone else's infra.
