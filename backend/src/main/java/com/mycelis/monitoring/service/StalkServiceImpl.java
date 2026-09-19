@@ -79,7 +79,7 @@ public class StalkServiceImpl implements StalkService {
                 .nickname(request.getNickname())
                 .growthIntervalSeconds(request.getGrowthIntervalSeconds())
                 .timeoutSeconds(request.getTimeoutSeconds())
-                .currentState(StalkState.DORMANT)
+                .currentState(StalkState.HEALTHY)
                 .reliabilityState(ReliabilityState.AWAKENING)
                 .latencyState(LatencyState.NORMAL)
                 .healthIndex(0.0)
@@ -349,10 +349,9 @@ public class StalkServiceImpl implements StalkService {
     @Deprecated
     private StalkState deriveLegacyState(ReliabilityState reliability, LatencyState latency) {
         return switch (reliability) {
-            // StalkState (legacy) has no AWAKENING equivalent, and current_state's
-            // CHECK constraint only permits HEALTHY/STRESSED/DEGRADED/DORMANT — DORMANT
-            // is the closest fit ("not yet contributing a real verdict").
-            case AWAKENING -> StalkState.DORMANT;
+            // AWAKENING has no true legacy equivalent — HEALTHY is the least-misleading
+            // fallback until legacy readers migrate to the two-axis model.
+            case AWAKENING -> StalkState.HEALTHY;
             case DORMANT -> StalkState.DORMANT;
             // DOWN is per-pulse only (see ReliabilityState) — stalk-level metrics never
             // produce it, but the switch must stay exhaustive. StalkState has no DOWN
@@ -366,7 +365,7 @@ public class StalkServiceImpl implements StalkService {
 
     private void validateHealthIndex(double healthIndex) {
         if (healthIndex < 0.0 || healthIndex > 100.0) {
-            log.error("Corrupted healthIndex detected: {}. Forcing DORMANT state.", healthIndex);
+            log.error("Invalid health index computed: {}. Throwing IllegalStateException.", healthIndex);
             throw new IllegalStateException("Invalid health index: " + healthIndex);
         }
     }

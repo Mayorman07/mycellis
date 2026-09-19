@@ -179,7 +179,7 @@ public class AlertEngine {
                     stalk.getId(), stalk.getCreatedByUserId());
         }
         return user;
-    }
+    }git log -p --all -- backend/src/main/resources/application.properties | grep -B 20 "awakening-pulse-threshold"
 
     private String recipientEmail(User user) {
         String alertEmail = user.getAlertEmail();

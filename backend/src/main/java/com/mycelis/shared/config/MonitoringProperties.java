@@ -42,14 +42,6 @@ public class MonitoringProperties {
     private double healthyThreshold = 90.0;
 
     /**
-     * Minimum health index percentage to be considered DEGRADED (vs DORMANT).
-     * Range: 0-100
-     */
-    @Min(0)
-    @Max(100)
-    private double degradedThreshold = 1.0;
-
-    /**
      * Minimum number of pulses a stalk must have recorded since its last
      * activation before it can leave AWAKENING and receive a real
      * HEALTHY/DEGRADED verdict. Counted from stalk.lastActivatedAt, not
@@ -98,12 +90,6 @@ public class MonitoringProperties {
     @Min(1)
     @Max(1440)  // 24 hours
     private int slidingWindowMinutes = 10;
-
-    /**
-     * Maximum allowed consecutive failures before forcing DORMANT state.
-     */
-    @Min(1)
-    private int maxConsecutiveFailures = 10;
 
     // =================================================================
     // API RESPONSE LIMITS (Defense Against Resource Exhaustion)
